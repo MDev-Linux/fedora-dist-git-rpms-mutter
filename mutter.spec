@@ -1,6 +1,6 @@
 Name:          mutter
 Version:       2.29.0
-Release:       1%{?dist}
+Release:       2%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 Group:         User Interface/Desktops
@@ -153,6 +153,9 @@ gconftool-2 --makefile-install-rule \
 %doc %{_mandir}/man1/mutter-window-demo.1.gz
 
 %changelog
+* Wed Mar 17 2010 Peter Robinson <pbrobinson@gmail.com> 2.29.0-2
+- add the patch 
+
 * Wed Mar 17 2010 Peter Robinson <pbrobinson@gmail.com> 2.29.0-1
 - New upstream 2.29.0 release
 
