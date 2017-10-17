@@ -7,7 +7,7 @@
 
 Name:          mutter
 Version:       3.27.1
-Release:       1%{?dist}
+Release:       2%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -119,7 +119,7 @@ the functionality of the installed %{name} package.
 %build
 autoreconf -f -i
 (if ! test -x configure; then NOCONFIGURE=1 ./autogen.sh; fi;
- %configure --disable-static --enable-compile-warnings=maximum --enable-remote-desktop --enable-installed-tests --with-libwacom)
+ %configure --disable-static --enable-compile-warnings=maximum --enable-remote-desktop --enable-installed-tests --with-libwacom --enable-egl-device)
 
 SHOULD_HAVE_DEFINED="HAVE_SM HAVE_RANDR HAVE_STARTUP_NOTIFICATION"
 
@@ -187,6 +187,9 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_datadir}/mutter/tests
 
 %changelog
+* Tue Oct 17 2017 Mateusz Mikuła <mati865@gmail.com> - 3.27.1-2
+- Enable EGLDevice
+
 * Tue Oct 17 2017 Florian Müllner <fmuellner@redhat.com> - 3.27.1-1
 - Update to 3.27.1
 
