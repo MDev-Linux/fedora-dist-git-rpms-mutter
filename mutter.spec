@@ -6,8 +6,8 @@
 %global pipewire_version 0.1.4
 
 Name:          mutter
-Version:       3.27.91
-Release:       2%{?dist}
+Version:       3.27.92
+Release:       1%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -16,10 +16,6 @@ URL:           http://www.gnome.org
 Source0:       http://download.gnome.org/sources/%{name}/3.27/%{name}-%{version}.tar.xz
 
 Patch0:        startup-notification.patch
-# https://gitlab.gnome.org/GNOME/mutter/merge_requests/36
-# Fixes https://gitlab.gnome.org/GNOME/mutter/issues/2 , aka
-# https://bugzilla.redhat.com/show_bug.cgi?id=1547691
-Patch1:        36.patch
 
 BuildRequires: chrpath
 BuildRequires: pango-devel
@@ -184,6 +180,9 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/%{name}.desktop
 %{_datadir}/mutter/tests
 
 %changelog
+* Mon Mar 05 2018 Florian Müllner <fmuellner@redhat.com> - 3.27.92-1
+- Update to 3.27.92
+
 * Wed Feb 28 2018 Adam Williamson <awilliam@redhat.com> - 3.27.91-2
 - Backport MR#36 to fix RHBZ #1547691 (GGO #2), mouse issues
 
