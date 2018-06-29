@@ -7,7 +7,7 @@
 
 Name:          mutter
 Version:       3.28.2
-Release:       1%{?dist}
+Release:       2%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -16,6 +16,9 @@ URL:           http://www.gnome.org
 Source0:       http://download.gnome.org/sources/%{name}/3.28/%{name}-%{version}.tar.xz
 
 Patch0:        startup-notification.patch
+
+# Upload HW cursor on demand, avoiding stuttering on hybrid GPU laptops
+Patch1:        hw-cursor-on-demand-gnome-3-28.patch
 
 BuildRequires: chrpath
 BuildRequires: pango-devel
@@ -180,6 +183,9 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/%{name}.desktop
 %{_datadir}/mutter/tests
 
 %changelog
+* Fri May 25 2018 Jonas Ådahl <jadahl@redhat.com> - 3.28.2-2
+- Apply HW cursor on-demand patches
+
 * Mon May 07 2018 Florian Müllner <fmuellner@redhat.com> - 3.28.2-1
 - Update to 3.28.2
 
