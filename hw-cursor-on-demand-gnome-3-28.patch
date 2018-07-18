@@ -45,7 +45,7 @@ index bcb3505c7..5bbac70e8 100644
  	wayland/meta-wayland-actor-surface.h	\
  	wayland/meta-wayland-subsurface.c	\
 diff --git a/src/backends/meta-cursor-renderer.c b/src/backends/meta-cursor-renderer.c
-index 0bdc59c15..eb79737f1 100644
+index f6470e66a..eb79737f1 100644
 --- a/src/backends/meta-cursor-renderer.c
 +++ b/src/backends/meta-cursor-renderer.c
 @@ -193,8 +193,8 @@ meta_cursor_renderer_calculate_rect (MetaCursorRenderer *renderer,
@@ -77,7 +77,7 @@ index 0bdc59c15..eb79737f1 100644
  }
  
  void
-@@ -261,38 +261,25 @@ meta_cursor_renderer_set_position (MetaCursorRenderer *renderer,
+@@ -261,7 +261,7 @@ meta_cursor_renderer_set_position (MetaCursorRenderer *renderer,
    priv->current_x = x;
    priv->current_y = y;
  
@@ -85,52 +85,38 @@ index 0bdc59c15..eb79737f1 100644
 +  meta_cursor_renderer_update_cursor (renderer, priv->displayed_cursor);
  }
  
--MetaCursorSprite *
--meta_cursor_renderer_get_cursor (MetaCursorRenderer *renderer)
--{
--  MetaCursorRendererPrivate *priv = meta_cursor_renderer_get_instance_private (renderer);
--
--  return priv->displayed_cursor;
--}
+ ClutterPoint
+@@ -283,28 +283,3 @@ meta_cursor_renderer_get_cursor (MetaCursorRenderer *renderer)
+ 
+   return priv->displayed_cursor;
+ }
 -
 -#ifdef HAVE_WAYLAND
 -void
 -meta_cursor_renderer_realize_cursor_from_wl_buffer (MetaCursorRenderer *renderer,
 -                                                    MetaCursorSprite   *cursor_sprite,
 -                                                    struct wl_resource *buffer)
-+ClutterPoint
-+meta_cursor_renderer_get_position (MetaCursorRenderer *renderer)
- {
-+  MetaCursorRendererPrivate *priv =
-+    meta_cursor_renderer_get_instance_private (renderer);
- 
+-{
+-
 -  MetaCursorRendererClass *renderer_class = META_CURSOR_RENDERER_GET_CLASS (renderer);
 -
 -  if (renderer_class->realize_cursor_from_wl_buffer)
 -    renderer_class->realize_cursor_from_wl_buffer (renderer, cursor_sprite, buffer);
-+  return (ClutterPoint) {
-+    .x = priv->current_x,
-+    .y = priv->current_y
-+  };
- }
+-}
 -#endif
- 
+-
 -void
 -meta_cursor_renderer_realize_cursor_from_xcursor (MetaCursorRenderer *renderer,
 -                                                  MetaCursorSprite   *cursor_sprite,
 -                                                  XcursorImage       *xc_image)
-+MetaCursorSprite *
-+meta_cursor_renderer_get_cursor (MetaCursorRenderer *renderer)
- {
+-{
 -  MetaCursorRendererClass *renderer_class = META_CURSOR_RENDERER_GET_CLASS (renderer);
-+  MetaCursorRendererPrivate *priv = meta_cursor_renderer_get_instance_private (renderer);
- 
+-
 -  if (renderer_class->realize_cursor_from_xcursor)
 -    renderer_class->realize_cursor_from_xcursor (renderer, cursor_sprite, xc_image);
-+  return priv->displayed_cursor;
- }
+-}
 diff --git a/src/backends/meta-cursor-renderer.h b/src/backends/meta-cursor-renderer.h
-index 8ac0fe79b..830d16ef6 100644
+index 1691f4471..830d16ef6 100644
 --- a/src/backends/meta-cursor-renderer.h
 +++ b/src/backends/meta-cursor-renderer.h
 @@ -26,10 +26,6 @@
@@ -159,15 +145,7 @@ index 8ac0fe79b..830d16ef6 100644
  };
  
  MetaCursorRenderer * meta_cursor_renderer_new (void);
-@@ -62,6 +50,7 @@ void meta_cursor_renderer_set_cursor (MetaCursorRenderer *renderer,
- void meta_cursor_renderer_set_position (MetaCursorRenderer *renderer,
-                                         float               x,
-                                         float               y);
-+ClutterPoint meta_cursor_renderer_get_position (MetaCursorRenderer *renderer);
- void meta_cursor_renderer_force_update (MetaCursorRenderer *renderer);
- 
- MetaCursorSprite * meta_cursor_renderer_get_cursor (MetaCursorRenderer *renderer);
-@@ -69,16 +58,6 @@ MetaCursorSprite * meta_cursor_renderer_get_cursor (MetaCursorRenderer *renderer
+@@ -70,16 +58,6 @@ MetaCursorSprite * meta_cursor_renderer_get_cursor (MetaCursorRenderer *renderer
  ClutterRect meta_cursor_renderer_calculate_rect (MetaCursorRenderer *renderer,
                                                   MetaCursorSprite   *cursor_sprite);
  
@@ -1190,7 +1168,7 @@ index a29f593ea..042d96ec6 100644
    meta_idle_monitor_reset_idletime (idle_monitor);
  }
 diff --git a/src/backends/native/meta-cursor-renderer-native.c b/src/backends/native/meta-cursor-renderer-native.c
-index aea86dffd..b33a45460 100644
+index c7326af42..29800953b 100644
 --- a/src/backends/native/meta-cursor-renderer-native.c
 +++ b/src/backends/native/meta-cursor-renderer-native.c
 @@ -35,6 +35,7 @@
@@ -1245,7 +1223,7 @@ index aea86dffd..b33a45460 100644
    MetaCursorRendererNativeGpuData *cursor_renderer_gpu_data;
    MetaGpuKms *gpu_kms;
    int kms_fd;
-@@ -369,7 +382,8 @@ static void
+@@ -371,7 +384,8 @@ static void
  update_hw_cursor (MetaCursorRendererNative *native,
                    MetaCursorSprite         *cursor_sprite)
  {
@@ -1255,7 +1233,7 @@ index aea86dffd..b33a45460 100644
    MetaCursorRenderer *renderer = META_CURSOR_RENDERER (native);
    MetaMonitorManager *monitor_manager = priv->monitor_manager;
    GList *logical_monitors;
-@@ -562,18 +576,15 @@ can_draw_cursor_unscaled (MetaCursorRenderer *renderer,
+@@ -564,18 +578,15 @@ can_draw_cursor_unscaled (MetaCursorRenderer *renderer,
  
  static gboolean
  should_have_hw_cursor (MetaCursorRenderer *renderer,
@@ -1276,7 +1254,7 @@ index aea86dffd..b33a45460 100644
    for (l = gpus; l; l = l->next)
      {
        MetaGpuKms *gpu_kms = l->data;
-@@ -607,7 +618,8 @@ should_have_hw_cursor (MetaCursorRenderer *renderer,
+@@ -609,7 +620,8 @@ should_have_hw_cursor (MetaCursorRenderer *renderer,
  static gboolean
  meta_cursor_renderer_native_update_animation (MetaCursorRendererNative *native)
  {
@@ -1286,7 +1264,7 @@ index aea86dffd..b33a45460 100644
    MetaCursorRenderer *renderer = META_CURSOR_RENDERER (native);
    MetaCursorSprite *cursor_sprite = meta_cursor_renderer_get_cursor (renderer);
  
-@@ -619,10 +631,11 @@ meta_cursor_renderer_native_update_animation (MetaCursorRendererNative *native)
+@@ -621,10 +633,11 @@ meta_cursor_renderer_native_update_animation (MetaCursorRendererNative *native)
  }
  
  static void
@@ -1301,7 +1279,7 @@ index aea86dffd..b33a45460 100644
    gboolean cursor_change;
    guint delay;
  
-@@ -654,21 +667,78 @@ meta_cursor_renderer_native_trigger_frame (MetaCursorRendererNative *native,
+@@ -656,21 +669,78 @@ meta_cursor_renderer_native_trigger_frame (MetaCursorRendererNative *native,
      }
  }
  
@@ -1385,7 +1363,7 @@ index aea86dffd..b33a45460 100644
  }
  
  static void
-@@ -704,6 +774,24 @@ ensure_cursor_gpu_state (MetaCursorNativePrivate *cursor_priv,
+@@ -706,6 +776,24 @@ ensure_cursor_gpu_state (MetaCursorNativePrivate *cursor_priv,
    return cursor_gpu_state;
  }
  
@@ -1410,7 +1388,7 @@ index aea86dffd..b33a45460 100644
  static void
  cursor_priv_free (MetaCursorNativePrivate *cursor_priv)
  {
-@@ -736,6 +824,9 @@ ensure_cursor_priv (MetaCursorSprite *cursor_sprite)
+@@ -738,6 +826,9 @@ ensure_cursor_priv (MetaCursorSprite *cursor_sprite)
                             cursor_priv,
                             (GDestroyNotify) cursor_priv_free);
  
@@ -1420,7 +1398,7 @@ index aea86dffd..b33a45460 100644
    return cursor_priv;
  }
  
-@@ -803,57 +894,71 @@ load_cursor_sprite_gbm_buffer_for_gpu (MetaCursorRendererNative *native,
+@@ -805,57 +896,71 @@ load_cursor_sprite_gbm_buffer_for_gpu (MetaCursorRendererNative *native,
      }
  }
  
@@ -1511,7 +1489,7 @@ index aea86dffd..b33a45460 100644
    if (shm_buffer)
      {
        int rowstride = wl_shm_buffer_get_stride (shm_buffer);
-@@ -927,47 +1032,27 @@ meta_cursor_renderer_native_realize_cursor_from_wl_buffer_for_gpu (MetaCursorRen
+@@ -929,47 +1034,27 @@ meta_cursor_renderer_native_realize_cursor_from_wl_buffer_for_gpu (MetaCursorRen
        set_pending_cursor_sprite_gbm_bo (cursor_sprite, gpu_kms, bo);
      }
  }
@@ -1568,7 +1546,7 @@ index aea86dffd..b33a45460 100644
  
    load_cursor_sprite_gbm_buffer_for_gpu (native,
                                           gpu_kms,
-@@ -980,26 +1065,45 @@ meta_cursor_renderer_native_realize_cursor_from_xcursor_for_gpu (MetaCursorRende
+@@ -982,26 +1067,45 @@ meta_cursor_renderer_native_realize_cursor_from_xcursor_for_gpu (MetaCursorRende
  }
  
  static void
@@ -1627,7 +1605,7 @@ index aea86dffd..b33a45460 100644
      }
  }
  
-@@ -1011,12 +1115,6 @@ meta_cursor_renderer_native_class_init (MetaCursorRendererNativeClass *klass)
+@@ -1013,12 +1117,6 @@ meta_cursor_renderer_native_class_init (MetaCursorRendererNativeClass *klass)
  
    object_class->finalize = meta_cursor_renderer_native_finalize;
    renderer_class->update_cursor = meta_cursor_renderer_native_update_cursor;
@@ -1640,7 +1618,7 @@ index aea86dffd..b33a45460 100644
  
    quark_cursor_sprite = g_quark_from_static_string ("-meta-cursor-native");
    quark_cursor_renderer_native_gpu_data =
-@@ -1031,14 +1129,13 @@ force_update_hw_cursor (MetaCursorRendererNative *native)
+@@ -1033,14 +1131,13 @@ force_update_hw_cursor (MetaCursorRendererNative *native)
      meta_cursor_renderer_native_get_instance_private (native);
  
    priv->hw_state_invalidated = TRUE;
@@ -1656,7 +1634,7 @@ index aea86dffd..b33a45460 100644
    force_update_hw_cursor (native);
  }
  
-@@ -1110,9 +1207,3 @@ static void
+@@ -1112,9 +1209,3 @@ static void
  meta_cursor_renderer_native_init (MetaCursorRendererNative *native)
  {
  }
@@ -2252,10 +2230,10 @@ index 5345033c2..e00a41e09 100644
                                                                   GError               **error);
  CoglTexture *           meta_wayland_buffer_get_texture         (MetaWaylandBuffer     *buffer);
 diff --git a/src/wayland/meta-wayland-surface-role-cursor.c b/src/wayland/meta-wayland-cursor-surface.c
-similarity index 51%
+similarity index 52%
 rename from src/wayland/meta-wayland-surface-role-cursor.c
 rename to src/wayland/meta-wayland-cursor-surface.c
-index 1c8ba94e5..d08af9e8c 100644
+index d118a8917..d08af9e8c 100644
 --- a/src/wayland/meta-wayland-surface-role-cursor.c
 +++ b/src/wayland/meta-wayland-cursor-surface.c
 @@ -23,7 +23,7 @@
@@ -2415,7 +2393,7 @@ index 1c8ba94e5..d08af9e8c 100644
    MetaWaylandSurface *surface =
      meta_wayland_surface_role_get_surface (surface_role);
    MetaWaylandBuffer *buffer = meta_wayland_surface_get_buffer (surface);
-@@ -182,36 +171,37 @@ cursor_surface_role_commit (MetaWaylandSurfaceRole  *surface_role,
+@@ -182,19 +171,19 @@ cursor_surface_role_commit (MetaWaylandSurfaceRole  *surface_role,
    wl_list_init (&pending->frame_callback_list);
  
    if (pending->newly_attached)
@@ -2435,23 +2413,14 @@ index 1c8ba94e5..d08af9e8c 100644
 -    META_WAYLAND_SURFACE_ROLE_CURSOR (surface->role);
 -  MetaWaylandSurfaceRoleCursorPrivate *priv =
 -    meta_wayland_surface_role_cursor_get_instance_private (cursor_role);
--  ClutterRect rect;
 +  MetaWaylandCursorSurface *cursor_surface =
 +    META_WAYLAND_CURSOR_SURFACE (surface->role);
 +  MetaWaylandCursorSurfacePrivate *priv =
 +    meta_wayland_cursor_surface_get_instance_private (cursor_surface);
-+  ClutterPoint point;
+   ClutterPoint point;
    ClutterRect logical_monitor_rect;
  
--  rect = meta_cursor_renderer_calculate_rect (priv->cursor_renderer,
--                                              priv->cursor_sprite);
-   logical_monitor_rect =
-     meta_rectangle_to_clutter_rect (&logical_monitor->rect);
--  return clutter_rect_intersection (&rect, &logical_monitor_rect, NULL);
-+
-+  point = meta_cursor_renderer_get_position (priv->cursor_renderer);
-+
-+  return clutter_rect_contains_point (&logical_monitor_rect, &point);
+@@ -207,12 +196,12 @@ cursor_surface_role_is_on_logical_monitor (MetaWaylandSurfaceRole *role,
  }
  
  static void
@@ -2469,7 +2438,7 @@ index 1c8ba94e5..d08af9e8c 100644
    MetaWaylandSurface *surface =
      meta_wayland_surface_role_get_surface (META_WAYLAND_SURFACE_ROLE (object));
    MetaWaylandFrameCallback *cb, *next;
-@@ -220,7 +210,7 @@ cursor_surface_role_dispose (GObject *object)
+@@ -221,7 +210,7 @@ cursor_surface_role_dispose (GObject *object)
      wl_resource_destroy (cb->resource);
  
    g_signal_handlers_disconnect_by_func (priv->cursor_sprite,
@@ -2478,7 +2447,7 @@ index 1c8ba94e5..d08af9e8c 100644
  
    g_clear_object (&priv->cursor_renderer);
    g_clear_object (&priv->cursor_sprite);
-@@ -231,18 +221,18 @@ cursor_surface_role_dispose (GObject *object)
+@@ -232,18 +221,18 @@ cursor_surface_role_dispose (GObject *object)
        g_clear_object (&priv->buffer);
      }
  
@@ -2504,7 +2473,7 @@ index 1c8ba94e5..d08af9e8c 100644
    MetaWaylandSurface *surface =
      meta_wayland_surface_role_get_surface (surface_role);
    MetaWaylandBuffer *buffer;
-@@ -256,55 +246,57 @@ cursor_surface_role_constructed (GObject *object)
+@@ -257,55 +246,57 @@ cursor_surface_role_constructed (GObject *object)
        g_set_object (&priv->buffer, buffer);
        meta_wayland_surface_ref_buffer_use_count (surface);
      }
@@ -2587,7 +2556,7 @@ index 1c8ba94e5..d08af9e8c 100644
  
    if (priv->hot_x == hotspot_x &&
        priv->hot_y == hotspot_y)
-@@ -312,16 +304,16 @@ meta_wayland_surface_role_cursor_set_hotspot (MetaWaylandSurfaceRoleCursor *curs
+@@ -313,16 +304,16 @@ meta_wayland_surface_role_cursor_set_hotspot (MetaWaylandSurfaceRoleCursor *curs
  
    priv->hot_x = hotspot_x;
    priv->hot_y = hotspot_y;
@@ -2610,7 +2579,7 @@ index 1c8ba94e5..d08af9e8c 100644
  
    if (hotspot_x)
      *hotspot_x = priv->hot_x;
-@@ -330,15 +322,15 @@ meta_wayland_surface_role_cursor_get_hotspot (MetaWaylandSurfaceRoleCursor *curs
+@@ -331,15 +322,15 @@ meta_wayland_surface_role_cursor_get_hotspot (MetaWaylandSurfaceRoleCursor *curs
  }
  
  static void
@@ -2632,7 +2601,7 @@ index 1c8ba94e5..d08af9e8c 100644
      return;
  
    while (!wl_list_empty (&priv->frame_callbacks))
-@@ -352,11 +344,11 @@ on_cursor_painted (MetaCursorRenderer           *renderer,
+@@ -353,11 +344,11 @@ on_cursor_painted (MetaCursorRenderer           *renderer,
  }
  
  void
@@ -2648,7 +2617,7 @@ index 1c8ba94e5..d08af9e8c 100644
  
    if (priv->cursor_renderer == renderer)
      return;
-@@ -372,19 +364,19 @@ meta_wayland_surface_role_cursor_set_renderer (MetaWaylandSurfaceRoleCursor *cur
+@@ -373,19 +364,19 @@ meta_wayland_surface_role_cursor_set_renderer (MetaWaylandSurfaceRoleCursor *cur
      {
        priv->cursor_painted_handler_id =
          g_signal_connect_object (renderer, "cursor-painted",
