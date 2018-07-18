@@ -6,8 +6,8 @@
 %global pipewire_version 0.1.4
 
 Name:          mutter
-Version:       3.28.2
-Release:       2%{?dist}
+Version:       3.28.3
+Release:       1%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -183,6 +183,9 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/%{name}.desktop
 %{_datadir}/mutter/tests
 
 %changelog
+* Wed Jul 18 2018 Florian Müllner <fmuellner@redhat.com> - 3.28.3-1
+- Update to 3.28.3
+
 * Fri May 25 2018 Jonas Ådahl <jadahl@redhat.com> - 3.28.2-2
 - Apply HW cursor on-demand patches
 
