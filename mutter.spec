@@ -7,7 +7,7 @@
 
 Name:          mutter
 Version:       3.28.3
-Release:       1%{?dist}
+Release:       2%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -19,6 +19,9 @@ Patch0:        startup-notification.patch
 
 # Upload HW cursor on demand, avoiding stuttering on hybrid GPU laptops
 Patch1:        hw-cursor-on-demand-gnome-3-28.patch
+
+# Check hw support for calculated view transform
+Patch2:        0001-renderer-native-Check-calculated-transform-when-crea.patch
 
 BuildRequires: chrpath
 BuildRequires: pango-devel
@@ -183,6 +186,9 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/%{name}.desktop
 %{_datadir}/mutter/tests
 
 %changelog
+* Mon Jul 23 2018 Jonas Ådalh <jadahl@redhat.com> - 3.28.3-2
+- Apply monitor transform regression patch
+
 * Wed Jul 18 2018 Florian Müllner <fmuellner@redhat.com> - 3.28.3-1
 - Update to 3.28.3
 
