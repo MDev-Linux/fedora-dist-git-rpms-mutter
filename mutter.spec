@@ -7,7 +7,7 @@
 
 Name:          mutter
 Version:       3.28.3
-Release:       2%{?dist}
+Release:       3%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -22,6 +22,10 @@ Patch1:        hw-cursor-on-demand-gnome-3-28.patch
 
 # Check hw support for calculated view transform
 Patch2:        0001-renderer-native-Check-calculated-transform-when-crea.patch
+
+# PipeWire 0.2.2+ support
+Patch3:        mutter-search-for-libpipewire-0_2.patch
+Patch4:        mutter-pipewire-0_2-API.patch
 
 BuildRequires: chrpath
 BuildRequires: pango-devel
@@ -186,6 +190,9 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/%{name}.desktop
 %{_datadir}/mutter/tests
 
 %changelog
+* Wed Aug 01 2018 Jan Grulich <jgrulich@redhat.com> - 3.28.3-3
+- Support PipeWire 0.2.2+
+
 * Mon Jul 23 2018 Jonas Ådalh <jadahl@redhat.com> - 3.28.3-2
 - Apply monitor transform regression patch
 
