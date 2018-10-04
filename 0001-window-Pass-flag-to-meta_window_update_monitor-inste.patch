@@ -1,0 +1,218 @@
+From 30266605b58e02b017e793fc898917874590e01c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Fri, 24 Aug 2018 12:54:50 +0200
+Subject: [PATCH 1/2] window: Pass flag to meta_window_update_monitor() instead
+ of bool
+
+The bool determines whether the call was directly from a user operation
+or not. To add more state into the call without having to add more
+boolenas, change the boolean to a flag (so far with 'none' and 'user-op'
+as possible values). No functional changes were made.
+
+https://gitlab.gnome.org/GNOME/mutter/issues/192
+
+(cherry picked from commit f4d07caa38e51d09ee73bab20334a6b5c28952d6)
+---
+ src/core/window-private.h                | 14 ++++++++++----
+ src/core/window.c                        | 24 ++++++++++++++++--------
+ src/wayland/meta-wayland-shell-surface.c |  2 +-
+ src/wayland/meta-window-wayland.c        |  8 ++++----
+ src/x11/window-x11.c                     |  6 +++---
+ 5 files changed, 34 insertions(+), 20 deletions(-)
+
+diff --git a/src/core/window-private.h b/src/core/window-private.h
+index eb86b642c..bed2fc7f6 100644
+--- a/src/core/window-private.h
++++ b/src/core/window-private.h
+@@ -121,6 +121,12 @@ typedef enum
+   META_PLACEMENT_CONSTRAINT_ADJUSTMENT_RESIZE_Y = 1 << 5,
+ } MetaPlacementConstraintAdjustment;
+ 
++typedef enum _MetaWindowUpdateMonitorFlags
++{
++  META_WINDOW_UPDATE_MONITOR_FLAGS_NONE = 0,
++  META_WINDOW_UPDATE_MONITOR_FLAGS_USER_OP = 1 << 0,
++} MetaWindowUpdateMonitorFlags;
++
+ typedef struct _MetaPlacementRule
+ {
+   MetaRectangle anchor_rect;
+@@ -549,8 +555,8 @@ struct _MetaWindowClass
+                                   cairo_surface_t **icon,
+                                   cairo_surface_t **mini_icon);
+   uint32_t (*get_client_pid)     (MetaWindow *window);
+-  void (*update_main_monitor)    (MetaWindow *window,
+-                                  gboolean    user_op);
++  void (*update_main_monitor)    (MetaWindow                   *window,
++                                  MetaWindowUpdateMonitorFlags  flags);
+   void (*main_monitor_changed)   (MetaWindow *window,
+                                   const MetaLogicalMonitor *old);
+   void (*force_restore_shortcuts) (MetaWindow         *window,
+@@ -768,8 +774,8 @@ void meta_window_activate_full (MetaWindow     *window,
+ MetaLogicalMonitor * meta_window_calculate_main_logical_monitor (MetaWindow *window);
+ 
+ MetaLogicalMonitor * meta_window_get_main_logical_monitor (MetaWindow *window);
+-void meta_window_update_monitor (MetaWindow *window,
+-                                 gboolean    user_op);
++void meta_window_update_monitor (MetaWindow                   *window,
++                                 MetaWindowUpdateMonitorFlags  flags);
+ 
+ void meta_window_set_urgent (MetaWindow *window,
+                              gboolean    urgent);
+diff --git a/src/core/window.c b/src/core/window.c
+index cc0813ac4..5547169d8 100644
+--- a/src/core/window.c
++++ b/src/core/window.c
+@@ -3804,7 +3804,8 @@ meta_window_update_for_monitors_changed (MetaWindow *window)
+ 
+   if (window->override_redirect || window->type == META_WINDOW_DESKTOP)
+     {
+-      meta_window_update_monitor (window, FALSE);
++      meta_window_update_monitor (window,
++                                  META_WINDOW_UPDATE_MONITOR_FLAGS_NONE);
+       return;
+     }
+ 
+@@ -3839,18 +3840,19 @@ meta_window_update_for_monitors_changed (MetaWindow *window)
+     }
+   else
+     {
+-      meta_window_update_monitor (window, FALSE);
++      meta_window_update_monitor (window,
++                                  META_WINDOW_UPDATE_MONITOR_FLAGS_NONE);
+     }
+ }
+ 
+ void
+-meta_window_update_monitor (MetaWindow *window,
+-                            gboolean    user_op)
++meta_window_update_monitor (MetaWindow                   *window,
++                            MetaWindowUpdateMonitorFlags  flags)
+ {
+   const MetaLogicalMonitor *old;
+ 
+   old = window->monitor;
+-  META_WINDOW_GET_CLASS (window)->update_main_monitor (window, user_op);
++  META_WINDOW_GET_CLASS (window)->update_main_monitor (window, flags);
+   if (old != window->monitor)
+     {
+       meta_window_on_all_workspaces_changed (window);
+@@ -3864,7 +3866,8 @@ meta_window_update_monitor (MetaWindow *window,
+        * That should be handled by explicitly moving the window before changing the
+        * workspace.
+        */
+-      if (meta_prefs_get_workspaces_only_on_primary () && user_op &&
++      if (meta_prefs_get_workspaces_only_on_primary () &&
++          flags & META_WINDOW_UPDATE_MONITOR_FLAGS_USER_OP &&
+           meta_window_is_on_primary_monitor (window)  &&
+           window->screen->active_workspace != window->workspace)
+         meta_window_change_workspace (window, window->screen->active_workspace);
+@@ -3907,6 +3910,7 @@ meta_window_move_resize_internal (MetaWindow          *window,
+   MetaRectangle constrained_rect;
+   MetaMoveResizeResultFlags result = 0;
+   gboolean moved_or_resized = FALSE;
++  MetaWindowUpdateMonitorFlags update_monitor_flags;
+ 
+   g_return_if_fail (!window->override_redirect);
+ 
+@@ -4007,13 +4011,17 @@ meta_window_move_resize_internal (MetaWindow          *window,
+                                             did_placement);
+     }
+ 
++  update_monitor_flags = META_WINDOW_UPDATE_MONITOR_FLAGS_NONE;
++  if (flags & META_MOVE_RESIZE_USER_ACTION)
++    update_monitor_flags |= META_WINDOW_UPDATE_MONITOR_FLAGS_USER_OP;
++
+   if (window->monitor)
+     {
+       guint old_output_winsys_id;
+ 
+       old_output_winsys_id = window->monitor->winsys_id;
+ 
+-      meta_window_update_monitor (window, flags & META_MOVE_RESIZE_USER_ACTION);
++      meta_window_update_monitor (window, update_monitor_flags);
+ 
+       if (old_output_winsys_id != window->monitor->winsys_id &&
+           flags & META_MOVE_RESIZE_MOVE_ACTION && flags & META_MOVE_RESIZE_USER_ACTION)
+@@ -4021,7 +4029,7 @@ meta_window_move_resize_internal (MetaWindow          *window,
+     }
+   else
+     {
+-      meta_window_update_monitor (window, flags & META_MOVE_RESIZE_USER_ACTION);
++      meta_window_update_monitor (window, update_monitor_flags);
+     }
+ 
+   if ((result & META_MOVE_RESIZE_RESULT_FRAME_SHAPE_CHANGED) && window->frame_bounds)
+diff --git a/src/wayland/meta-wayland-shell-surface.c b/src/wayland/meta-wayland-shell-surface.c
+index b5f3acacf..72b3557c7 100644
+--- a/src/wayland/meta-wayland-shell-surface.c
++++ b/src/wayland/meta-wayland-shell-surface.c
+@@ -83,7 +83,7 @@ meta_wayland_shell_surface_set_window (MetaWaylandShellSurface *shell_surface,
+     meta_wayland_surface_role_get_surface (surface_role);
+ 
+   meta_wayland_surface_set_window (surface, window);
+-  meta_window_update_monitor (window, FALSE);
++  meta_window_update_monitor (window, META_WINDOW_UPDATE_MONITOR_FLAGS_NONE);
+ }
+ 
+ void
+diff --git a/src/wayland/meta-window-wayland.c b/src/wayland/meta-window-wayland.c
+index 8bafb252f..544c60b5b 100644
+--- a/src/wayland/meta-window-wayland.c
++++ b/src/wayland/meta-window-wayland.c
+@@ -371,8 +371,8 @@ scale_rect_size (MetaRectangle *rect,
+ }
+ 
+ static void
+-meta_window_wayland_update_main_monitor (MetaWindow *window,
+-                                         gboolean    user_op)
++meta_window_wayland_update_main_monitor (MetaWindow                   *window,
++                                         MetaWindowUpdateMonitorFlags  flags)
+ {
+   MetaBackend *backend = meta_get_backend ();
+   MetaMonitorManager *monitor_manager =
+@@ -392,7 +392,7 @@ meta_window_wayland_update_main_monitor (MetaWindow *window,
+   toplevel_window = meta_wayland_surface_get_toplevel_window (window->surface);
+   if (toplevel_window != window)
+     {
+-      meta_window_update_monitor (toplevel_window, user_op);
++      meta_window_update_monitor (window, flags);
+       window->monitor = toplevel_window->monitor;
+       return;
+     }
+@@ -413,7 +413,7 @@ meta_window_wayland_update_main_monitor (MetaWindow *window,
+       return;
+     }
+ 
+-  if (!user_op)
++  if (flags & META_WINDOW_UPDATE_MONITOR_FLAGS_USER_OP)
+     {
+       window->monitor = to;
+       return;
+diff --git a/src/x11/window-x11.c b/src/x11/window-x11.c
+index e9bd8ae65..e1c34412d 100644
+--- a/src/x11/window-x11.c
++++ b/src/x11/window-x11.c
+@@ -1483,8 +1483,8 @@ meta_window_x11_update_icon (MetaWindow       *window,
+ }
+ 
+ static void
+-meta_window_x11_update_main_monitor (MetaWindow *window,
+-                                     gboolean    user_op)
++meta_window_x11_update_main_monitor (MetaWindow                   *window,
++                                     MetaWindowUpdateMonitorFlags  flags)
+ {
+   window->monitor = meta_window_calculate_main_logical_monitor (window);
+ }
+@@ -3314,7 +3314,7 @@ meta_window_x11_configure_notify (MetaWindow      *window,
+   priv->client_rect = window->rect;
+   window->buffer_rect = window->rect;
+ 
+-  meta_window_update_monitor (window, FALSE);
++  meta_window_update_monitor (window, META_WINDOW_UPDATE_MONITOR_FLAGS_NONE);
+ 
+   /* Whether an override-redirect window is considered fullscreen depends
+    * on its geometry.
+-- 
+2.19.0
+

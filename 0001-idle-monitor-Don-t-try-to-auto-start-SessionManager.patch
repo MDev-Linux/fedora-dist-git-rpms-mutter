@@ -1,0 +1,32 @@
+From 9d88fc8cb7565ce21563c1195c2950f8f050a3fc Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Florian=20M=C3=BCllner?= <fmuellner@gnome.org>
+Date: Sun, 29 Apr 2018 20:43:47 +0000
+Subject: [PATCH] idle-monitor: Don't try to auto-start SessionManager
+
+The interface is provided by gnome-session and not activatable.
+
+https://gitlab.gnome.org/GNOME/mutter/issues/134
+
+
+(cherry picked from commit 2319cd9c4014fcc0c2487d7c02e67857f940687e)
+---
+ src/backends/meta-idle-monitor.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/backends/meta-idle-monitor.c b/src/backends/meta-idle-monitor.c
+index 7a217f761..76a7ee786 100644
+--- a/src/backends/meta-idle-monitor.c
++++ b/src/backends/meta-idle-monitor.c
+@@ -246,7 +246,8 @@ meta_idle_monitor_init (MetaIdleMonitor *monitor)
+   /* Monitor inhibitors */
+   monitor->session_proxy =
+     g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+-                                   G_DBUS_PROXY_FLAGS_DO_NOT_CONNECT_SIGNALS,
++                                   G_DBUS_PROXY_FLAGS_DO_NOT_CONNECT_SIGNALS |
++                                   G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START,
+                                    NULL,
+                                    "org.gnome.SessionManager",
+                                    "/org/gnome/SessionManager",
+-- 
+2.19.0
+

@@ -1,0 +1,104 @@
+From aa6d1614c069496bab3f6fa5d374c727fa352742 Mon Sep 17 00:00:00 2001
+From: Iain Lane <iainl@gnome.org>
+Date: Mon, 13 Aug 2018 10:22:22 +0000
+Subject: [PATCH 2/2] monitor-manager-kms: Check if GPUs can have outputs
+
+We need a way for mutter to exit if no available GPUs are going to work.
+For example if gdm starts gnome-shell and we're using a DRM driver that
+doesn't work with KMS then we should exit so that GDM can try with Xorg,
+rather than operating in headless mode.
+
+Related: https://gitlab.gnome.org/GNOME/mutter/issues/223
+
+
+(cherry picked from commit deb541ef5ac2cc07d0259c259bff8d1523388d47)
+---
+ src/backends/native/meta-gpu-kms.c            |  8 ++++++++
+ src/backends/native/meta-gpu-kms.h            |  2 ++
+ .../native/meta-monitor-manager-kms.c         | 20 +++++++++++++++++++
+ 3 files changed, 30 insertions(+)
+
+diff --git a/src/backends/native/meta-gpu-kms.c b/src/backends/native/meta-gpu-kms.c
+index 7e7607c46..08c1e7dbe 100644
+--- a/src/backends/native/meta-gpu-kms.c
++++ b/src/backends/native/meta-gpu-kms.c
+@@ -797,6 +797,12 @@ meta_gpu_kms_read_current (MetaGpu  *gpu,
+   return TRUE;
+ }
+ 
++gboolean
++meta_gpu_kms_can_have_outputs (MetaGpuKms *gpu_kms)
++{
++  return gpu_kms->n_connectors > 0;
++}
++
+ MetaGpuKms *
+ meta_gpu_kms_new (MetaMonitorManagerKms  *monitor_manager_kms,
+                   const char             *kms_file_path,
+@@ -860,6 +866,8 @@ meta_gpu_kms_new (MetaMonitorManagerKms  *monitor_manager_kms,
+ 
+   drmSetClientCap (gpu_kms->fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1);
+ 
++  meta_gpu_kms_read_current (META_GPU (gpu_kms), NULL);
++
+   source = g_source_new (&kms_event_funcs, sizeof (MetaKmsSource));
+   kms_source = (MetaKmsSource *) source;
+   kms_source->fd_tag = g_source_add_unix_fd (source,
+diff --git a/src/backends/native/meta-gpu-kms.h b/src/backends/native/meta-gpu-kms.h
+index 3d0f5f65e..d53ed98c8 100644
+--- a/src/backends/native/meta-gpu-kms.h
++++ b/src/backends/native/meta-gpu-kms.h
+@@ -59,6 +59,8 @@ gboolean meta_gpu_kms_apply_crtc_mode (MetaGpuKms *gpu_kms,
+                                        int         y,
+                                        uint32_t    fb_id);
+ 
++gboolean meta_gpu_kms_can_have_outputs (MetaGpuKms *gpu_kms);
++
+ gboolean meta_gpu_kms_is_crtc_active (MetaGpuKms *gpu_kms,
+                                       MetaCrtc   *crtc);
+ 
+diff --git a/src/backends/native/meta-monitor-manager-kms.c b/src/backends/native/meta-monitor-manager-kms.c
+index d8e7b848d..438069110 100644
+--- a/src/backends/native/meta-monitor-manager-kms.c
++++ b/src/backends/native/meta-monitor-manager-kms.c
+@@ -642,10 +642,12 @@ meta_monitor_manager_kms_initable_init (GInitable    *initable,
+                                         GError      **error)
+ {
+   MetaMonitorManagerKms *manager_kms = META_MONITOR_MANAGER_KMS (initable);
++  MetaMonitorManager *manager = META_MONITOR_MANAGER (manager_kms);
+   const char *subsystems[2] = { "drm", NULL };
+   GList *gpu_paths;
+   g_autofree char *primary_gpu_path = NULL;
+   GList *l;
++  gboolean can_have_outputs;
+ 
+   manager_kms->udev = g_udev_client_new (subsystems);
+ 
+@@ -694,6 +696,24 @@ meta_monitor_manager_kms_initable_init (GInitable    *initable,
+     }
+   g_list_free_full (gpu_paths, g_free);
+ 
++  can_have_outputs = FALSE;
++  for (l = meta_monitor_manager_get_gpus (manager); l; l = l->next)
++    {
++      MetaGpuKms *gpu_kms = l->data;
++
++      if (meta_gpu_kms_can_have_outputs (gpu_kms))
++        {
++          can_have_outputs = TRUE;
++          break;
++        }
++    }
++  if (!can_have_outputs)
++    {
++      g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
++                   "No GPUs with outputs found");
++      return FALSE;
++    }
++
+   return TRUE;
+ }
+ 
+-- 
+2.19.0
+

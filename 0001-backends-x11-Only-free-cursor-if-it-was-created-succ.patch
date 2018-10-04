@@ -1,0 +1,34 @@
+From f76cacd15430bcc22d9f66e0b500e3ec8a242c23 Mon Sep 17 00:00:00 2001
+From: Sebastian Keller <sebastian-keller@gmx.de>
+Date: Thu, 2 Aug 2018 00:58:56 +0200
+Subject: [PATCH] backends/x11: Only free cursor if it was created successfully
+
+XcursorLibraryLoadCursor can return 'None' if the current cursor theme
+is missing the requested icon. If XFreeCursor is then called on this
+cursor, it generates a BadCursor error causing gnome-shell to crash.
+
+Fixes https://gitlab.gnome.org/GNOME/mutter/issues/254
+
+(cherry picked from commit 1bfa20929b36d06cc23667d1122175149615b56d)
+---
+ src/core/screen.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/core/screen.c b/src/core/screen.c
+index c14bba0cf..d7623f3fb 100644
+--- a/src/core/screen.c
++++ b/src/core/screen.c
+@@ -1394,7 +1394,9 @@ meta_screen_update_cursor (MetaScreen *screen)
+ 
+   XDefineCursor (display->xdisplay, screen->xroot, xcursor);
+   XFlush (display->xdisplay);
+-  XFreeCursor (display->xdisplay, xcursor);
++
++  if (xcursor)
++    XFreeCursor (display->xdisplay, xcursor);
+ }
+ 
+ void
+-- 
+2.19.0
+

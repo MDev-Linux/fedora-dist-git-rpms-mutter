@@ -1,0 +1,59 @@
+From 0a09a3c9063230d9a3f170371f93d2d2280d8e06 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Florian=20M=C3=BCllner?= <fmuellner@gnome.org>
+Date: Thu, 19 Jul 2018 11:47:12 +0200
+Subject: [PATCH 3/3] tests: Add "closed-transient" test
+
+When a transient window is destroyed, the expected behavior is that
+focus is passed to the ancestor if possible. This was broken for
+quite a while until the previous commit, so add a test case to make
+sure it doesn't happen again.
+
+https://gitlab.gnome.org/GNOME/mutter/issues/15
+
+(cherry-picked from commit 137f22236cba5f2583d8db3d957e3926d1f7f668)
+---
+ src/Makefile-tests.am                        |  1 +
+ src/tests/stacking/closed-transient.metatest | 19 +++++++++++++++++++
+ 2 files changed, 20 insertions(+)
+ create mode 100644 src/tests/stacking/closed-transient.metatest
+
+diff --git a/src/Makefile-tests.am b/src/Makefile-tests.am
+index 72706e2bd..4be832cc9 100644
+--- a/src/Makefile-tests.am
++++ b/src/Makefile-tests.am
+@@ -14,6 +14,7 @@ stackingdir = $(pkgdatadir)/tests/stacking
+ dist_stacking_DATA =				\
+ 	tests/stacking/basic-x11.metatest	\
+ 	tests/stacking/basic-wayland.metatest	\
++	tests/stacking/closed-transient.metatest	\
+ 	tests/stacking/minimized.metatest   	\
+ 	tests/stacking/mixed-windows.metatest   \
+ 	tests/stacking/set-parent.metatest	\
+diff --git a/src/tests/stacking/closed-transient.metatest b/src/tests/stacking/closed-transient.metatest
+new file mode 100644
+index 000000000..5ca95ba0f
+--- /dev/null
++++ b/src/tests/stacking/closed-transient.metatest
+@@ -0,0 +1,19 @@
++new_client 1 wayland
++create 1/1
++show 1/1
++
++new_client 2 wayland
++create 2/1
++show 2/1
++
++create 1/2
++show 1/2
++set_parent 1/2 1
++
++wait
++assert_stacking 1/1 2/1 1/2
++
++destroy 1/2
++
++wait
++assert_stacking 2/1 1/1
+-- 
+2.19.0
+

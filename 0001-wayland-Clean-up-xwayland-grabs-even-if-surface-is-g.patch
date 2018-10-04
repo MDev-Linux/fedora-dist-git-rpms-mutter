@@ -1,0 +1,52 @@
+From 5b9f5329bd922f7048084977102f23ad2845311e Mon Sep 17 00:00:00 2001
+From: Olivier Fourdan <ofourdan@redhat.com>
+Date: Fri, 3 Aug 2018 10:50:32 +0200
+Subject: [PATCH] wayland: Clean up xwayland grabs even if surface is gone
+
+If the surface is gone before `meta_xwayland_keyboard_grab_end()` is
+called, we would bail out early leaving an empty grab, which will cause
+a segfault as soon as a key is pressed later on.
+
+Make sure we clean up the keyboard grab even if the surface is gone.
+
+Closes: https://gitlab.gnome.org/GNOME/mutter/issues/255
+(cherry picked from commit 252dd524390dcdbdd89534c0014d22a796957f55)
+---
+ src/wayland/meta-xwayland-grab-keyboard.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/src/wayland/meta-xwayland-grab-keyboard.c b/src/wayland/meta-xwayland-grab-keyboard.c
+index 42b194a77..db2d5f0bd 100644
+--- a/src/wayland/meta-xwayland-grab-keyboard.c
++++ b/src/wayland/meta-xwayland-grab-keyboard.c
+@@ -85,6 +85,13 @@ meta_xwayland_keyboard_grab_end (MetaXwaylandKeyboardActiveGrab *active_grab)
+ {
+   MetaWaylandSeat *seat = active_grab->seat;
+ 
++  if (seat->keyboard->grab->interface->key == meta_xwayland_keyboard_grab_key)
++    {
++      meta_wayland_keyboard_end_grab (active_grab->keyboard_grab.keyboard);
++      meta_wayland_keyboard_set_focus (active_grab->keyboard_grab.keyboard, NULL);
++      meta_display_sync_wayland_input_focus (meta_get_display ());
++    }
++
+   if (!active_grab->surface)
+     return;
+ 
+@@ -104,13 +111,6 @@ meta_xwayland_keyboard_grab_end (MetaXwaylandKeyboardActiveGrab *active_grab)
+       active_grab->window_associate_handler = 0;
+     }
+ 
+-  if (seat->keyboard->grab->interface->key == meta_xwayland_keyboard_grab_key)
+-    {
+-      meta_wayland_keyboard_end_grab (active_grab->keyboard_grab.keyboard);
+-      meta_wayland_keyboard_set_focus (active_grab->keyboard_grab.keyboard, NULL);
+-      meta_display_sync_wayland_input_focus (meta_get_display ());
+-    }
+-
+   active_grab->surface = NULL;
+ }
+ 
+-- 
+2.19.0
+

@@ -7,7 +7,7 @@
 
 Name:          mutter
 Version:       3.28.3
-Release:       3%{?dist}
+Release:       4%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -26,6 +26,66 @@ Patch2:        0001-renderer-native-Check-calculated-transform-when-crea.patch
 # PipeWire 0.2.2+ support
 Patch3:        mutter-search-for-libpipewire-0_2.patch
 Patch4:        mutter-pipewire-0_2-API.patch
+
+# From gnome-3-28
+#
+# Upstream issue: https://gitlab.gnome.org/GNOME/mutter/issues/189
+# Upstream issue: https://gitlab.gnome.org/GNOME/mutter/issues/192
+Patch10: 0001-window-wayland-Always-update-monitor-for-non-user-op.patch
+Patch11: 0001-window-Pass-flag-to-meta_window_update_monitor-inste.patch
+Patch12: 0002-window-Force-update-monitor-on-hot-plugs.patch
+Patch13: 0001-window-wayland-Don-t-recursive-indefinitely-when-upd.patch
+
+# Upstream issue: https://gitlab.gnome.org/GNOME/mutter/issues/194
+Patch14: 0001-wayland-Nullify-monitor-resources-when-updating-outp.patch
+Patch15: 0001-wayland-No-xdg-output-events-without-a-logical-monit.patch
+
+# Upstream issue: https://gitlab.gnome.org/GNOME/mutter/issues/255
+Patch16: 0001-wayland-Clean-up-xwayland-grabs-even-if-surface-is-g.patch
+
+# Upstream issue: https://gitlab.gnome.org/GNOME/mutter/issues/70
+Patch17: 0001-native-gpu-Handle-drmModeSetCrtc-failing-gracefully.patch
+
+# Upstream issue: https://gitlab.gnome.org/GNOME/mutter/issues/15
+Patch18: 0001-window-Don-t-refuse-to-move-focus-to-the-grab-window.patch
+Patch19: 0002-window-Explicitly-exclude-unmanaging-window-from-foc.patch
+Patch20: 0003-tests-Add-closed-transient-test.patch
+
+# Upstream issue: https://gitlab.gnome.org/GNOME/mutter/issues/130
+Patch21: 0001-monitor-Use-current-monitor-mode-to-check-whether-ac.patch
+
+# Upstream issue: https://gitlab.gnome.org/GNOME/mutter/issues/223
+Patch22: 0001-gpu-kms-Don-t-crash-if-drmModeGetResources-returns-N.patch
+Patch23: 0001-gpu-kms-Handle-drmModeGetResources-failing.patch
+Patch24: 0002-monitor-manager-kms-Check-if-GPUs-can-have-outputs.patch
+
+# Upstream issue: https://gitlab.gnome.org/GNOME/mutter/issues/127
+Patch25: 0001-renderer-native-Fallback-to-non-planar-API-if-gbm_bo.patch
+
+# Upstream issue: https://bugzilla.gnome.org/show_bug.cgi?id=784206
+Patch26: 0001-wayland-keyboard-Create-a-separate-keymap-shm-file-p.patch
+
+# Upstream issue: https://bugzilla.gnome.org/show_bug.cgi?id=788834
+Patch27: 0001-window-Return-1-if-meta_window_get_monitor-is-called.patch
+
+# Upstream issue: https://gitlab.gnome.org/GNOME/mutter/issues/254
+Patch28: 0001-backends-x11-Only-free-cursor-if-it-was-created-succ.patch
+
+# Upstream issue: https://gitlab.gnome.org/GNOME/mutter/issues/134
+Patch29: 0001-idle-monitor-Don-t-try-to-auto-start-SessionManager.patch
+
+# Upstream issue: https://gitlab.gnome.org/GNOME/mutter/issues/240
+# Upstream issue: https://gitlab.gnome.org/GNOME/mutter/issues/174
+# Upstream issue: https://gitlab.gnome.org/GNOME/mutter/issues/221
+Patch30: 0001-window-unmanage-dialog-when-clearing-transient_for.patch
+Patch31: 0001-wayland-xdg-shell-Queue-frame-callbacks-on-new-actor.patch
+Patch32: 0002-wayland-surface-Add-API-to-cache-frame-callbacks.patch
+Patch33: 0003-wayland-xdg-shell-Cache-pending-frame-callbacks-on-p.patch
+Patch34: 0004-wayland-xdg-shell-Cache-frame-callbacks-if-toplevel-.patch
+Patch35: 0005-wayland-xdg-shell-Handle-requests-after-toplevel-was.patch
+Patch36: 0006-wayland-legacy-xdg-shell-Cache-frame-callbacks-if-to.patch
+Patch37: 0007-wayland-legacy-xdg-shell-Handle-requests-after-tople.patch
+Patch38: 0008-wayland-gtk-shell-Handle-requests-after-toplevel-was.patch
 
 BuildRequires: chrpath
 BuildRequires: pango-devel
@@ -190,6 +250,22 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/%{name}.desktop
 %{_datadir}/mutter/tests
 
 %changelog
+* Thu Oct 04 2018 Olivier Fourdan <ofourdan@redhat.com> - 3.28.3-4
+- Backport fixes from upstream "gnome-3-28" branch:
+ - https://bugzilla.gnome.org/show_bug.cgi?id=784206
+ - https://bugzilla.gnome.org/show_bug.cgi?id=788834
+ - https://gitlab.gnome.org/GNOME/mutter/issues/15
+ - https://gitlab.gnome.org/GNOME/mutter/issues/70
+ - https://gitlab.gnome.org/GNOME/mutter/issues/127
+ - https://gitlab.gnome.org/GNOME/mutter/issues/130
+ - https://gitlab.gnome.org/GNOME/mutter/issues/134
+ - https://gitlab.gnome.org/GNOME/mutter/issues/189
+ - https://gitlab.gnome.org/GNOME/mutter/issues/192
+ - https://gitlab.gnome.org/GNOME/mutter/issues/194
+ - https://gitlab.gnome.org/GNOME/mutter/issues/223
+ - https://gitlab.gnome.org/GNOME/mutter/issues/254
+ - https://gitlab.gnome.org/GNOME/mutter/issues/255
+
 * Wed Aug 01 2018 Jan Grulich <jgrulich@redhat.com> - 3.28.3-3
 - Support PipeWire 0.2.2+
 

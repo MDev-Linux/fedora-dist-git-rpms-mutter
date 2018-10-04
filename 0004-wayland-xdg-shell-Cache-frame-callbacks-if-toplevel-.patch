@@ -1,0 +1,49 @@
+From b5c2555601da7c8b347664e7ef34803e08a52697 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Mon, 27 Aug 2018 12:30:07 +0200
+Subject: [PATCH 4/8] wayland/xdg-shell: Cache frame callbacks if toplevel is
+ unmanaged
+
+A toplevel window can be unmanaged without the client knowing it (e.g. a
+modal dialog being unmapped together with its parent. When this has
+happened, take frame callbacks queued on a commit and cache them on the
+generic surface queue. If the toplevel is to be remapped, either because
+the surface was reassigned the toplevel role, or if it was reset and
+remapped, the cached frame callbacks will be queued on the surface actor
+and dispatched accordingly.
+
+https://gitlab.gnome.org/GNOME/mutter/issues/240
+(cherry picked from commit 80d420ff430e8e9495fd29d68084cb050600b26f)
+---
+ src/wayland/meta-wayland-xdg-shell.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/src/wayland/meta-wayland-xdg-shell.c b/src/wayland/meta-wayland-xdg-shell.c
+index 3cf6b5716..9e300df6b 100644
+--- a/src/wayland/meta-wayland-xdg-shell.c
++++ b/src/wayland/meta-wayland-xdg-shell.c
+@@ -624,6 +624,13 @@ meta_wayland_xdg_toplevel_commit (MetaWaylandSurfaceRole  *surface_role,
+   MetaRectangle old_geometry;
+   gboolean geometry_changed;
+ 
++  window = surface->window;
++  if (!window)
++    {
++      meta_wayland_surface_cache_pending_frame_callbacks (surface, pending);
++      return;
++    }
++
+   if (!surface->buffer_ref.buffer && xdg_surface_priv->first_buffer_attached)
+     {
+       MetaWaylandActorSurface *actor_surface =
+@@ -635,7 +642,6 @@ meta_wayland_xdg_toplevel_commit (MetaWaylandSurfaceRole  *surface_role,
+       return;
+     }
+ 
+-  window = surface->window;
+   old_geometry = xdg_surface_priv->geometry;
+ 
+   surface_role_class =
+-- 
+2.19.0
+

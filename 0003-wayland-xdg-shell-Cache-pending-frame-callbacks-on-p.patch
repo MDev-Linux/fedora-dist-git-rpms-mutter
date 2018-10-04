@@ -1,0 +1,38 @@
+From 0a85e6272e7d04edc6c754affeea8d66716cc9fb Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Wed, 25 Jul 2018 11:53:17 +0200
+Subject: [PATCH 3/8] wayland/xdg-shell: Cache pending frame callbacks on popup
+ reset
+
+A popup can be reset, and when that happens, window and actor are
+destroyed, and won't be created again unless it is reassigned the
+popup role.
+
+If a client queued frame callbacks when resetting a popup, the frame
+callbacks would be left in the pending state, as they were not queued on
+the actor, meaning we'd hit an assert about the frame callbacks not
+being handled. Fix this by caching them on the MetaWaylandSurface, so
+that they either are cleaned up on destruction, or queued on the actor
+would the surface be re-assigned the popup role.
+
+https://gitlab.gnome.org/GNOME/mutter/issues/240
+(cherry picked from commit 407d62943c1c0bbb34df5943b6b2d91c5723b6c4)
+---
+ src/wayland/meta-wayland-xdg-shell.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/wayland/meta-wayland-xdg-shell.c b/src/wayland/meta-wayland-xdg-shell.c
+index 4ab638f74..3cf6b5716 100644
+--- a/src/wayland/meta-wayland-xdg-shell.c
++++ b/src/wayland/meta-wayland-xdg-shell.c
+@@ -962,6 +962,7 @@ meta_wayland_xdg_popup_commit (MetaWaylandSurfaceRole  *surface_role,
+   if (!surface->buffer_ref.buffer && xdg_surface_priv->first_buffer_attached)
+     {
+       meta_wayland_xdg_surface_reset (xdg_surface);
++      meta_wayland_surface_cache_pending_frame_callbacks (surface, pending);
+       return;
+     }
+ 
+-- 
+2.19.0
+

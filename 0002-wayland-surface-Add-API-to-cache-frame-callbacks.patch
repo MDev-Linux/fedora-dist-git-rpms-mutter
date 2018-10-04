@@ -1,0 +1,70 @@
+From 4dfe4256ae66a151fb5a570f34af0f85f3e5e0f5 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Mon, 27 Aug 2018 12:05:58 +0200
+Subject: [PATCH 2/8] wayland/surface: Add API to cache frame callbacks
+
+Sometimes it may be useful for roles to put callbacks in the generic
+surface frame callback queue. The surface frame callback queue will
+either eventually be processed on the next surface role assignment that
+places the frame callbacks in a role specific queue, processed at some
+other point in time by a role, or cleaned up on surface destruction.
+
+https://gitlab.gnome.org/GNOME/mutter/issues/240
+(cherry picked from commit 0ace58d05f3e50f4fdcf4971baab163e6ae5a1e9)
+---
+ src/wayland/meta-wayland-surface.c | 17 ++++++++++-------
+ src/wayland/meta-wayland-surface.h |  3 +++
+ 2 files changed, 13 insertions(+), 7 deletions(-)
+
+diff --git a/src/wayland/meta-wayland-surface.c b/src/wayland/meta-wayland-surface.c
+index d2f5ffccf..3c9a404c7 100644
+--- a/src/wayland/meta-wayland-surface.c
++++ b/src/wayland/meta-wayland-surface.c
+@@ -602,6 +602,15 @@ parent_surface_state_applied (gpointer data,
+   meta_wayland_subsurface_parent_state_applied (subsurface);
+ }
+ 
++void
++meta_wayland_surface_cache_pending_frame_callbacks (MetaWaylandSurface      *surface,
++                                                    MetaWaylandPendingState *pending)
++{
++  wl_list_insert_list (&surface->pending_frame_callback_list,
++                       &pending->frame_callback_list);
++  wl_list_init (&pending->frame_callback_list);
++}
++
+ void
+ meta_wayland_surface_apply_pending_state (MetaWaylandSurface      *surface,
+                                           MetaWaylandPendingState *pending)
+@@ -722,13 +731,7 @@ meta_wayland_surface_apply_pending_state (MetaWaylandSurface      *surface,
+     }
+   else
+     {
+-      /* Since there is no role assigned to the surface yet, keep frame
+-       * callbacks queued until a role is assigned and we know how
+-       * the surface will be drawn.
+-       */
+-      wl_list_insert_list (&surface->pending_frame_callback_list,
+-                           &pending->frame_callback_list);
+-      wl_list_init (&pending->frame_callback_list);
++      meta_wayland_surface_cache_pending_frame_callbacks (surface, pending);
+ 
+       if (pending->newly_attached)
+         {
+diff --git a/src/wayland/meta-wayland-surface.h b/src/wayland/meta-wayland-surface.h
+index 05d2a0a24..46accd900 100644
+--- a/src/wayland/meta-wayland-surface.h
++++ b/src/wayland/meta-wayland-surface.h
+@@ -261,6 +261,9 @@ MetaWaylandSurface *meta_wayland_surface_get_toplevel (MetaWaylandSurface *surfa
+ 
+ MetaWindow *        meta_wayland_surface_get_toplevel_window (MetaWaylandSurface *surface);
+ 
++void                meta_wayland_surface_cache_pending_frame_callbacks (MetaWaylandSurface      *surface,
++                                                                        MetaWaylandPendingState *pending);
++
+ void                meta_wayland_surface_queue_pending_frame_callbacks (MetaWaylandSurface *surface);
+ 
+ void                meta_wayland_surface_queue_pending_state_frame_callbacks (MetaWaylandSurface      *surface,
+-- 
+2.19.0
+

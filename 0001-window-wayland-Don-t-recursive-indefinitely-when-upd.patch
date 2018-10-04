@@ -1,0 +1,35 @@
+From 1514880e92841d51a557edd505555de3e4a5b6ae Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Mon, 27 Aug 2018 17:49:52 +0200
+Subject: [PATCH] window/wayland: Don't recursive indefinitely when updating
+ monitor
+
+When we update the main monitor, there is a rule that makes it so that
+popup windows use the same main monitor as their parent. In the commit
+f4d07caa38e51d09ee73bab20334a6b5c28952d6 the call that updates and
+fetches the main monitor of the toplevel accidentally changed to update
+from itself, causing a indefinite recursion eventually resulting in a
+crash.
+
+Closes: https://gitlab.gnome.org/GNOME/mutter/issues/279
+(cherry picked from commit e191c21e04cfaa560f8dd51f4f91013af98ccf4e)
+---
+ src/wayland/meta-window-wayland.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/wayland/meta-window-wayland.c b/src/wayland/meta-window-wayland.c
+index e837215de..241e6b61c 100644
+--- a/src/wayland/meta-window-wayland.c
++++ b/src/wayland/meta-window-wayland.c
+@@ -392,7 +392,7 @@ meta_window_wayland_update_main_monitor (MetaWindow                   *window,
+   toplevel_window = meta_wayland_surface_get_toplevel_window (window->surface);
+   if (toplevel_window != window)
+     {
+-      meta_window_update_monitor (window, flags);
++      meta_window_update_monitor (toplevel_window, flags);
+       window->monitor = toplevel_window->monitor;
+       return;
+     }
+-- 
+2.19.0
+

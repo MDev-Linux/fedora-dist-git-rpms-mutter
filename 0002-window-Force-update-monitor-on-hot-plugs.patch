@@ -1,0 +1,81 @@
+From 83b7b17b64b3e42a87f524ac3504be81789ec0fc Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Fri, 24 Aug 2018 12:56:31 +0200
+Subject: [PATCH 2/2] window: Force update monitor on hot plugs
+
+Commit a3da4b8d5bd217c0262fd9361036877d155a300f changed updating of
+window monitors to always use take affect when it was done from a
+non-user operation. This could cause feed back loops when a non-user
+driven operation would trigger the changing of a monitor, which itself
+would trigger changing of the monitor again due to a window scale
+change.
+
+The reason for the change, was that when the window monitor changed due
+to a hot plug, if it didn't actually change, eventually the window
+monitor pointer would be pointing to freed memory.
+
+Instead of force updating the monitor on all non-user operations, just
+do it on hot plugs. This allows for the feedback loop preventing logic
+to still do what its supposed to do, without risking dangling pointers
+on hot plugs.
+
+Related: https://gitlab.gnome.org/GNOME/mutter/issues/189
+Closes: https://gitlab.gnome.org/GNOME/mutter/issues/192
+
+(cherry picked from commit 8d3e053059cd202e740076caedfc8e3ac149066a)
+---
+ src/core/window-private.h         | 1 +
+ src/core/window.c                 | 4 ++--
+ src/wayland/meta-window-wayland.c | 2 +-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/src/core/window-private.h b/src/core/window-private.h
+index bed2fc7f6..8552829b2 100644
+--- a/src/core/window-private.h
++++ b/src/core/window-private.h
+@@ -125,6 +125,7 @@ typedef enum _MetaWindowUpdateMonitorFlags
+ {
+   META_WINDOW_UPDATE_MONITOR_FLAGS_NONE = 0,
+   META_WINDOW_UPDATE_MONITOR_FLAGS_USER_OP = 1 << 0,
++  META_WINDOW_UPDATE_MONITOR_FLAGS_FORCE = 1 << 1,
+ } MetaWindowUpdateMonitorFlags;
+ 
+ typedef struct _MetaPlacementRule
+diff --git a/src/core/window.c b/src/core/window.c
+index 5547169d8..d69720a4d 100644
+--- a/src/core/window.c
++++ b/src/core/window.c
+@@ -3805,7 +3805,7 @@ meta_window_update_for_monitors_changed (MetaWindow *window)
+   if (window->override_redirect || window->type == META_WINDOW_DESKTOP)
+     {
+       meta_window_update_monitor (window,
+-                                  META_WINDOW_UPDATE_MONITOR_FLAGS_NONE);
++                                  META_WINDOW_UPDATE_MONITOR_FLAGS_FORCE);
+       return;
+     }
+ 
+@@ -3841,7 +3841,7 @@ meta_window_update_for_monitors_changed (MetaWindow *window)
+   else
+     {
+       meta_window_update_monitor (window,
+-                                  META_WINDOW_UPDATE_MONITOR_FLAGS_NONE);
++                                  META_WINDOW_UPDATE_MONITOR_FLAGS_FORCE);
+     }
+ }
+ 
+diff --git a/src/wayland/meta-window-wayland.c b/src/wayland/meta-window-wayland.c
+index 544c60b5b..e837215de 100644
+--- a/src/wayland/meta-window-wayland.c
++++ b/src/wayland/meta-window-wayland.c
+@@ -413,7 +413,7 @@ meta_window_wayland_update_main_monitor (MetaWindow                   *window,
+       return;
+     }
+ 
+-  if (flags & META_WINDOW_UPDATE_MONITOR_FLAGS_USER_OP)
++  if (flags & META_WINDOW_UPDATE_MONITOR_FLAGS_FORCE)
+     {
+       window->monitor = to;
+       return;
+-- 
+2.19.0
+
