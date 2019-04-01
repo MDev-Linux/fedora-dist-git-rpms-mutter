@@ -8,7 +8,7 @@
 
 Name:          mutter
 Version:       3.32.0
-Release:       2%{?dist}
+Release:       3%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -24,6 +24,9 @@ Patch1:        0001-build-Don-t-use-absolute-paths-with-subdir-keyword.patch
 
 # Backport work-around for hangul text input bug (rhbz#1632981)
 Patch2:        0001-wayland-Defer-text_input.done-on-an-idle.patch
+
+# Backport patch for app spinner notification not terminating (rhbz#1692135)
+Patch3:        startup_notification_remove.patch
 
 BuildRequires: chrpath
 BuildRequires: pango-devel
@@ -166,6 +169,9 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/%{name}.desktop
 %{_datadir}/mutter-%{mutter_api_version}/tests
 
 %changelog
+* Mon Apr 01 2019 Phil Wyett <philwyett@kathenas.org> - 3.32.0-3
+- Backport patch for app spinner notification not terminating (rhbz#1692135)
+
 * Mon Mar 25 2019 Adam Williamson <awilliam@redhat.com> - 3.32.0-2
 - Backport work-around for hangul text input bug (rhbz#1632981)
 
