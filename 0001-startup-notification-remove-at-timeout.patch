@@ -1,0 +1,28 @@
+From f0b9654deb947e49e42b76d6daa42b86e5b0ec17 Mon Sep 17 00:00:00 2001
+From: Carlos Garnacho <carlosg@gnome.org>
+Date: Mon, 18 Mar 2019 11:59:26 +0100
+Subject: [PATCH] core: Remove startup sequences after timeout
+
+The complete/remove semantics were split to cater for presenting windows,
+so we must now separately do both here.
+
+Related: https://gitlab.gnome.org/GNOME/mutter/issues/501
+---
+ src/core/startup-notification.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/core/startup-notification.c b/src/core/startup-notification.c
+index 8bcb0f385..d2d0d1362 100644
+--- a/src/core/startup-notification.c
++++ b/src/core/startup-notification.c
+@@ -454,6 +454,7 @@ startup_sequence_timeout (void *data)
+                   meta_startup_sequence_get_id (sequence));
+ 
+       meta_startup_sequence_complete (sequence);
++      meta_startup_notification_remove_sequence (sn, sequence);
+     }
+ 
+   g_slist_free (ctod.list);
+-- 
+2.18.1
+
