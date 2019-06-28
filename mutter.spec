@@ -8,7 +8,7 @@
 
 Name:          mutter
 Version:       3.32.2
-Release:       2%{?dist}
+Release:       3%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -20,6 +20,12 @@ Source0:       http://download.gnome.org/sources/%{name}/3.32/%{name}-%{version}
 Patch0:        0001-window-actor-Special-case-shaped-Java-windows.patch
 
 Patch1:        0001-renderer-native-add-missing-eglTerminate-in-EGLDevic.patch
+
+# Backport EGL surface destruction order fix:
+# https://gitlab.gnome.org/GNOME/mutter/merge_requests/622
+# Backport hot plug abort fix:
+# https://gitlab.gnome.org/GNOME/mutter/merge_requests/655
+Patch2:        egl-surface-destruction-and-hotplug-abort-fix.patch
 
 BuildRequires: chrpath
 BuildRequires: pango-devel
@@ -162,6 +168,10 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/%{name}.desktop
 %{_datadir}/mutter-%{mutter_api_version}/tests
 
 %changelog
+* Fri Jun 28 2019 Jonas Ådahl <jadahl@redhat.com> - 3.32.2-3
+- Backport EGL surface destruction order fix
+- Backport hot plug abort fix
+
 * Tue Jun 25 2019 Florian Müllner <fmuellner@redhat.com> - 3.32.2-2
 - Add missing eglTerminal() call in EGLDevice error path
 
