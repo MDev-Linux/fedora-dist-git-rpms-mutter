@@ -8,7 +8,7 @@
 
 Name:          mutter
 Version:       40.0~beta
-Release:       2%{?dist}
+Release:       3%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -24,6 +24,11 @@ Patch1:        0001-Revert-build-Do-not-provide-built-sources-as-libmutt.patch
 
 # Workaround for RHBZ#1936991 (blocks atomic KMS on "tegra" driver)
 Patch2:        0001-Test-deny-atomic-KMS-for-tegra-RHBZ-1936991.patch
+
+# Backport MR #1620, #1751 to fix input focus issues
+Patch3:        0001-window-Add-is_focus_async-API.patch
+Patch4:        0001-core-Account-for-the-globally-active-input-case.patch
+Patch5:        0001-clutter-Also-pick-on-BUTTON_PRESS-events.patch
 
 BuildRequires: chrpath
 BuildRequires: pango-devel
@@ -174,6 +179,9 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/%{name}.desktop
 %{_datadir}/mutter-%{mutter_api_version}/tests
 
 %changelog
+* Fri Mar 12 2021 Łukasz Patron <priv.luk@gmail.com> - 40.0~beta-3
+- Backport MR #1620, #1751 to fix input focus issues
+
 * Tue Mar 09 2021 Adam Williamson <awilliam@redhat.com> - 40.0~beta-2
 - Add a workaround for RHBZ#1936991 (disable atomic KMS on tegra)
 
