@@ -10,7 +10,7 @@
 
 Name:          mutter
 Version:       40.0
-Release:       5%{?dist}
+Release:       6%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -32,6 +32,9 @@ Patch3:        egl-surface-fixes.patch
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1802
 # Fix enter, space, backspace keys not working with input methods
 Patch4:        1802.patch
+
+# https://bugzilla.redhat.com/show_bug.cgi?id=1943959
+Patch5:        0001-clutteractor-Update-all-last_paint_volumes-before-painting.patch
 
 BuildRequires: chrpath
 BuildRequires: pango-devel
@@ -175,6 +178,9 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/%{name}.desktop
 %{_datadir}/mutter-%{mutter_api_version}/tests
 
 %changelog
+* Mon Apr 12 2021 Andrew Thurman <ajtbecool@gmail.com> - 40.0-6
+- Fix fullscreen window behavior issues (rhbz#1943959)
+
 * Wed Apr 07 2021 Jonas Ådahl <jadahl@redhat.com> - 40.0-5
 - Fix crash on resume fix regression (rhbz#1946652)
 
