@@ -10,7 +10,7 @@
 
 Name:          mutter
 Version:       40.0
-Release:       6%{?dist}
+Release:       7%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
