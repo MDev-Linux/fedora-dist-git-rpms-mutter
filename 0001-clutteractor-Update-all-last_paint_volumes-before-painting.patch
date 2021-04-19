@@ -1,7 +1,291 @@
+From 7aa147829de1dddcdacf416da358c7a4a9a94c29 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20Dre=C3=9Fler?= <verdre@v0yd.nl>
+Date: Sat, 24 Oct 2020 13:20:26 +0200
+Subject: [PATCH 1/3] clutter/actor: Add API to invalidate cached paint volumes
+
+ClutterActors can override the get_paint_volume() vfunc in case they
+draw outside the allocation. That's used by a bunch of actors, for
+example ClutterText or StViewport in gnome-shell.
+
+In case of StViewport, the paint volume returned depends on the value of
+the StAdjustment, which means when we start to cache paint volumes more
+agressively in ClutterActor, we'll need to add API that allows
+StViewport to invalidate the paint volume. So introduce
+clutter_actor_invalidate_paint_volume() to invalidate the cached paint
+volume.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1773>
+---
+ clutter/clutter/clutter-actor.c | 17 +++++++++++++++++
+ clutter/clutter/clutter-actor.h |  3 +++
+ 2 files changed, 20 insertions(+)
+
+diff --git a/clutter/clutter/clutter-actor.c b/clutter/clutter/clutter-actor.c
+index 0a0884415d..7aac4ab847 100644
+--- a/clutter/clutter/clutter-actor.c
++++ b/clutter/clutter/clutter-actor.c
+@@ -19533,6 +19533,23 @@ clutter_actor_invalidate_transform (ClutterActor *self)
+   transform_changed (self);
+ }
+
++/**
++ * clutter_actor_invalidate_paint_volume:
++ * @self: A #ClutterActor
++ *
++ * Invalidates the cached paint volume of @self. This is needed for
++ * implementations overriding the #ClutterActorClass.get_paint_volume()
++ * virtual function and has to be called every time the paint volume
++ * returned by that function would change.
++ */
++void
++clutter_actor_invalidate_paint_volume (ClutterActor *self)
++{
++  g_return_if_fail (CLUTTER_IS_ACTOR (self));
++
++  self->priv->needs_paint_volume_update = TRUE;
++}
++
+ gboolean
+ clutter_actor_get_redraw_clip (ClutterActor       *self,
+                                ClutterPaintVolume *dst_old_pv,
+diff --git a/clutter/clutter/clutter-actor.h b/clutter/clutter/clutter-actor.h
+index 39f96e2d5c..10b0a21748 100644
+--- a/clutter/clutter/clutter-actor.h
++++ b/clutter/clutter/clutter-actor.h
+@@ -931,6 +931,9 @@ GList * clutter_actor_peek_stage_views (ClutterActor *self);
+ CLUTTER_EXPORT
+ void clutter_actor_invalidate_transform (ClutterActor *self);
+
++CLUTTER_EXPORT
++void clutter_actor_invalidate_paint_volume (ClutterActor *self);
++
+ G_END_DECLS
+
+ #endif /* __CLUTTER_ACTOR_H__ */
+--
+GitLab
+
+
+From 3d17e8d5908d46da422c140e9b08e473c999a154 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20Dre=C3=9Fler?= <verdre@v0yd.nl>
+Date: Mon, 12 Oct 2020 10:58:38 +0200
+Subject: [PATCH 2/3] clutter/actor: Properly invalidate cached paint volumes
+ of actors
+
+The priv->paint_volume field of ClutterActor stores the cached paint
+volume in the actors local coordinate system. It consist of the actors
+paint volume itself and the union of all children paint volumes.
+
+We want to invalidate those cached paint volumes according to the
+following rules:
+
+- If an actors transformation matrix changes, all paint volumes of the
+parent-tree need to be invalidated (that's because the parent-volumes
+have unioned the actors paint volume). Our own paint volume does not
+need invalidation since the transformation matrix is not applied to it.
+
+- If an actors allocation-size changes, its own paint volume and all the
+volumes of the parent-tree need to be invalidated. That's because the
+allocation-size is used as the size of the paint volume.
+
+- If a clip gets set or clip_to_allocation gets enabled for an actor,
+its own paint volume and all the volumes of the parent-tree need to be
+invalidated. That's because the clip is factored in when creating the
+paint volume.
+
+So far we did this invalidation in various places and the invalidation
+up the parent-tree happened inside clutter_actor_real_queue_relayout().
+We did not invalidate on changes to the actors transformation matrices
+and the invalidation in clutter_actor_real_queue_relayout() was more
+like a "big hammer" that probably invalidated unnecessarily a few times.
+
+So introduce proper infrastructure to invalidate those cached paint
+volumes of actors only in the cases where they actually need to be
+invalidated. To do that, we reuse the transform_changed() function and
+introduce a new function queue_update_paint_volume() that invalidates
+the paint volumes up the actor tree.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1773>
+---
+ clutter/clutter/clutter-actor.c | 57 +++++++++++++++++----------------
+ 1 file changed, 30 insertions(+), 27 deletions(-)
+
+diff --git a/clutter/clutter/clutter-actor.c b/clutter/clutter/clutter-actor.c
+index 7aac4ab847..956718dd86 100644
+--- a/clutter/clutter/clutter-actor.c
++++ b/clutter/clutter/clutter-actor.c
+@@ -1501,6 +1501,16 @@ queue_update_stage_views (ClutterActor *actor)
+     }
+ }
+
++static void
++queue_update_paint_volume (ClutterActor *actor)
++{
++  while (actor)
++    {
++      actor->priv->needs_paint_volume_update = TRUE;
++      actor = actor->priv->parent;
++    }
++}
++
+ static void
+ clutter_actor_real_map (ClutterActor *self)
+ {
+@@ -1516,8 +1526,6 @@ clutter_actor_real_map (ClutterActor *self)
+
+   if (priv->unmapped_paint_branch_counter == 0)
+     {
+-      priv->needs_paint_volume_update = TRUE;
+-
+       /* We skip unmapped actors when updating the stage-views list, so if
+        * an actors list got invalidated while it was unmapped make sure to
+        * set priv->needs_update_stage_views to TRUE for all actors up the
+@@ -2463,6 +2471,9 @@ transform_changed (ClutterActor *actor)
+ {
+   actor->priv->transform_valid = FALSE;
+
++  if (actor->priv->parent)
++    queue_update_paint_volume (actor->priv->parent);
++
+   _clutter_actor_traverse (actor,
+                            CLUTTER_ACTOR_TRAVERSE_DEPTH_FIRST,
+                            absolute_geometry_changed_cb,
+@@ -2492,7 +2503,7 @@ clutter_actor_set_allocation_internal (ClutterActor           *self,
+ {
+   ClutterActorPrivate *priv = self->priv;
+   GObject *obj;
+-  gboolean x1_changed, y1_changed, x2_changed, y2_changed;
++  gboolean origin_changed, size_changed;
+   ClutterActorBox old_alloc = { 0, };
+
+   g_return_if_fail (!isnan (box->x1) && !isnan (box->x2) &&
+@@ -2504,10 +2515,11 @@ clutter_actor_set_allocation_internal (ClutterActor           *self,
+
+   clutter_actor_store_old_geometry (self, &old_alloc);
+
+-  x1_changed = priv->allocation.x1 != box->x1;
+-  y1_changed = priv->allocation.y1 != box->y1;
+-  x2_changed = priv->allocation.x2 != box->x2;
+-  y2_changed = priv->allocation.y2 != box->y2;
++  origin_changed =
++    priv->allocation.x1 != box->x1 || priv->allocation.y1 != box->y1;
++  size_changed =
++    priv->allocation.x2 - priv->allocation.x1 != box->x2 - box->x1 ||
++    priv->allocation.y2 - priv->allocation.y1 != box->y2 - box->y1;
+
+   priv->allocation = *box;
+
+@@ -2516,10 +2528,7 @@ clutter_actor_set_allocation_internal (ClutterActor           *self,
+   priv->needs_height_request = FALSE;
+   priv->needs_allocation = FALSE;
+
+-  if (x1_changed ||
+-      y1_changed ||
+-      x2_changed ||
+-      y2_changed)
++  if (origin_changed || size_changed)
+     {
+       CLUTTER_NOTE (LAYOUT, "Allocation for '%s' changed",
+                     _clutter_actor_get_debug_name (self));
+@@ -2527,6 +2536,9 @@ clutter_actor_set_allocation_internal (ClutterActor           *self,
+       /* This will also call absolute_geometry_changed() on the subtree */
+       transform_changed (self);
+
++      if (size_changed)
++        queue_update_paint_volume (self);
++
+       g_object_notify_by_pspec (obj, obj_props[PROP_ALLOCATION]);
+
+       /* if the allocation changes, so does the content box */
+@@ -2663,7 +2675,6 @@ clutter_actor_real_queue_relayout (ClutterActor *self)
+   priv->needs_width_request  = TRUE;
+   priv->needs_height_request = TRUE;
+   priv->needs_allocation     = TRUE;
+-  priv->needs_paint_volume_update = TRUE;
+
+   /* reset the cached size requests */
+   memset (priv->width_requests, 0,
+@@ -2675,18 +2686,9 @@ clutter_actor_real_queue_relayout (ClutterActor *self)
+   if (priv->parent != NULL)
+     {
+       if (priv->parent->flags & CLUTTER_ACTOR_NO_LAYOUT)
+-        {
+-          clutter_actor_queue_shallow_relayout (self);
+-
+-          /* The above might have invalidated the parent's paint volume if self
+-           * has moved or resized. DnD seems to require this...
+-           */
+-          priv->parent->priv->needs_paint_volume_update = TRUE;
+-        }
++        clutter_actor_queue_shallow_relayout (self);
+       else
+-        {
+-          _clutter_actor_queue_only_relayout (priv->parent);
+-        }
++        _clutter_actor_queue_only_relayout (priv->parent);
+     }
+ }
+
+@@ -4757,6 +4759,7 @@ clutter_actor_set_clip_rect (ClutterActor          *self,
+   else
+     priv->has_clip = FALSE;
+
++  queue_update_paint_volume (self);
+   clutter_actor_queue_redraw (self);
+
+   g_object_notify_by_pspec (obj, obj_props[PROP_CLIP_RECT]);
+@@ -9267,9 +9270,6 @@ clutter_actor_allocate (ClutterActor          *self,
+       return;
+     }
+
+-  if (CLUTTER_ACTOR_IS_MAPPED (self))
+-    self->priv->needs_paint_volume_update = TRUE;
+-
+   if (!origin_changed && !size_changed)
+     {
+       /* If the actor didn't move but needs_allocation is set, we just
+@@ -11142,6 +11142,7 @@ clutter_actor_set_clip (ClutterActor *self,
+
+   priv->has_clip = TRUE;
+
++  queue_update_paint_volume (self);
+   clutter_actor_queue_redraw (self);
+
+   g_object_notify_by_pspec (obj, obj_props[PROP_CLIP_RECT]);
+@@ -11164,6 +11165,7 @@ clutter_actor_remove_clip (ClutterActor *self)
+
+   self->priv->has_clip = FALSE;
+
++  queue_update_paint_volume (self);
+   clutter_actor_queue_redraw (self);
+
+   g_object_notify_by_pspec (G_OBJECT (self), obj_props[PROP_HAS_CLIP]);
+@@ -15132,6 +15134,7 @@ clutter_actor_set_clip_to_allocation (ClutterActor *self,
+     {
+       priv->clip_to_allocation = clip_set;
+
++      queue_update_paint_volume (self);
+       clutter_actor_queue_redraw (self);
+
+       g_object_notify_by_pspec (G_OBJECT (self), obj_props[PROP_CLIP_TO_ALLOCATION]);
+@@ -19547,7 +19550,7 @@ clutter_actor_invalidate_paint_volume (ClutterActor *self)
+ {
+   g_return_if_fail (CLUTTER_IS_ACTOR (self));
+
+-  self->priv->needs_paint_volume_update = TRUE;
++  queue_update_paint_volume (self);
+ }
+
+ gboolean
+--
+GitLab
+
+
 From 5a565b42586abb0c851888b827ffabc0cce38b75 Mon Sep 17 00:00:00 2001
-From: Jonas Dreßler <verdre@v0yd.nl>
+From: =?UTF-8?q?Jonas=20Dre=C3=9Fler?= <verdre@v0yd.nl>
 Date: Sat, 13 Mar 2021 20:43:13 +0100
-Subject: [PATCH] clutter/actor: Update all last_paint_volumes before painting
+Subject: [PATCH 3/3] clutter/actor: Update all last_paint_volumes before
+ painting
 
 Updating the last_paint_volume while painting has proven itself to be
 quite prone to issues: First we had to make sure actors painted by
@@ -26,18 +310,18 @@ Fixes https://gitlab.gnome.org/GNOME/mutter/-/issues/1699
 
 Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1773>
 ---
- clutter/clutter/clutter-actor-private.h |  4 ++--
- clutter/clutter/clutter-actor.c         | 85 +++++++++++++++++++++++++------------------------------------------------------------
+ clutter/clutter/clutter-actor-private.h |  4 +-
+ clutter/clutter/clutter-actor.c         | 85 ++++++++-----------------
  clutter/clutter/clutter-stage-private.h |  2 +-
- clutter/clutter/clutter-stage-view.c    |  3 ++-
- clutter/clutter/clutter-stage.c         |  7 ++++---
+ clutter/clutter/clutter-stage-view.c    |  3 +-
+ clutter/clutter/clutter-stage.c         |  7 +-
  5 files changed, 34 insertions(+), 67 deletions(-)
 
 diff --git a/clutter/clutter/clutter-actor-private.h b/clutter/clutter/clutter-actor-private.h
-index c34d772..4650577 100644
+index c34d772e87..46505777ae 100644
 --- a/clutter/clutter/clutter-actor-private.h
 +++ b/clutter/clutter/clutter-actor-private.h
-@@ -260,8 +260,8 @@ float                           clutter_actor_get_real_resource_scale           
+@@ -260,8 +260,8 @@ float                           clutter_actor_get_real_resource_scale
  ClutterPaintNode *              clutter_actor_create_texture_paint_node                 (ClutterActor *self,
                                                                                           CoglTexture  *texture);
  
@@ -49,7 +333,7 @@ index c34d772..4650577 100644
  void clutter_actor_queue_immediate_relayout (ClutterActor *self);
  
 diff --git a/clutter/clutter/clutter-actor.c b/clutter/clutter/clutter-actor.c
-index 956718d..bcfffc7 100644
+index 956718dd86..bcfffc714c 100644
 --- a/clutter/clutter/clutter-actor.c
 +++ b/clutter/clutter/clutter-actor.c
 @@ -844,7 +844,6 @@ struct _ClutterActorPrivate
@@ -188,7 +472,7 @@ index 956718d..bcfffc7 100644
      {
        graphene_box_t box;
  
-@@ -15871,26 +15834,28 @@ update_resource_scale (ClutterActor *self,
+@@ -15871,8 +15834,8 @@ update_resource_scale (ClutterActor *self,
  }
  
  void
@@ -199,8 +483,7 @@ index 956718d..bcfffc7 100644
  {
    ClutterActorPrivate *priv = self->priv;
    ClutterActor *child;
- 
-   if (!CLUTTER_ACTOR_IS_MAPPED (self) ||
+@@ -15881,16 +15844,18 @@ clutter_actor_update_stage_views (ClutterActor *self,
        CLUTTER_ACTOR_IN_DESTRUCTION (self))
      return;
  
@@ -226,10 +509,10 @@ index 956718d..bcfffc7 100644
  
  /**
 diff --git a/clutter/clutter/clutter-stage-private.h b/clutter/clutter/clutter-stage-private.h
-index 8f7ff31..05412ac 100644
+index 8f7ff31355..05412ace86 100644
 --- a/clutter/clutter/clutter-stage-private.h
 +++ b/clutter/clutter/clutter-stage-private.h
-@@ -68,7 +68,7 @@ void                clutter_stage_maybe_finish_queue_redraws (ClutterStage      
+@@ -68,7 +68,7 @@ void                clutter_stage_maybe_finish_queue_redraws (ClutterStage
  GSList *            clutter_stage_find_updated_devices   (ClutterStage          *stage);
  void                clutter_stage_update_devices         (ClutterStage          *stage,
                                                            GSList                *devices);
@@ -239,7 +522,7 @@ index 8f7ff31..05412ac 100644
  CLUTTER_EXPORT
  void     _clutter_stage_queue_event                       (ClutterStage *stage,
 diff --git a/clutter/clutter/clutter-stage-view.c b/clutter/clutter/clutter-stage-view.c
-index 9b325e9..b44bf88 100644
+index 9b325e911c..b44bf88854 100644
 --- a/clutter/clutter/clutter-stage-view.c
 +++ b/clutter/clutter/clutter-stage-view.c
 @@ -1171,9 +1171,10 @@ handle_frame_clock_frame (ClutterFrameClock *frame_clock,
@@ -255,7 +538,7 @@ index 9b325e9..b44bf88 100644
  
    frame = CLUTTER_FRAME_INIT;
 diff --git a/clutter/clutter/clutter-stage.c b/clutter/clutter/clutter-stage.c
-index 5b574b5..95e42e8 100644
+index 5b574b5e15..95e42e8589 100644
 --- a/clutter/clutter/clutter-stage.c
 +++ b/clutter/clutter/clutter-stage.c
 @@ -930,7 +930,7 @@ clutter_stage_find_updated_devices (ClutterStage *stage)
@@ -292,5 +575,5 @@ index 5b574b5..95e42e8 100644
  
    g_warn_if_fail (!priv->actor_needs_immediate_relayout);
 --
-libgit2 1.0.1
+GitLab
 
