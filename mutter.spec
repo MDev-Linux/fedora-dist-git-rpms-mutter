@@ -45,6 +45,11 @@ Patch4:        2299.patch
 Patch5:        0001-clutter-Refactor-code-marking-actors-dirty-for-paint.patch
 Patch6:        0002-clutter-Keep-actors-dirty-if-a-redraw-was-queued-up-.patch
 
+# Fix gnome elements not losing focus after hover
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2321
+Patch7:        0001-clutter-Pass-target-actor-of-events-to-event-filter-.patch
+Patch8:        0001-events-Use-the-event-target-actor-to-determine-windo.patch
+
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
 BuildRequires: pkgconfig(libwacom)
