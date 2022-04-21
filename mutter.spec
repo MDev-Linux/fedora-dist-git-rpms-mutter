@@ -10,7 +10,7 @@
 
 Name:          mutter
 Version:       42.0
-Release:       5%{?dist}
+Release:       6%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -62,6 +62,12 @@ Patch9:        0002-events-Use-the-event-target-actor-to-determine-windo.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=2076390
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2366
 Patch10:       2366.patch
+
+# Fix issues with display scaling
+# https://gitlab.gnome.org/GNOME/mutter/-/issues/2083
+# https://bugzilla.redhat.com/show_bug.cgi?id=2069984
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2335
+Patch11:       2335.patch
 
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
@@ -206,6 +212,9 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/%{name}.desktop
 %{_datadir}/mutter-%{mutter_api_version}/tests
 
 %changelog
+* Thu Apr 21 2022 Jonathan Dieter <jdieter@gmail.com> - 42.0-6
+- Backport MR #2335 to fix crash when scaling isn't 100%, 200% or 400%
+
 * Tue Apr 19 2022 Adam Williamson <awilliam@redhat.com> - 42.0-5
 - Backport MR #2366 to fix stuck modifier key issues (#2076390)
 - Backport MR #2321 to fix top bar hover issues
