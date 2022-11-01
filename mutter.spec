@@ -12,7 +12,7 @@
 
 Name:          mutter
 Version:       43.0
-Release:       3%{?dist}
+Release:       4%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -36,6 +36,11 @@ Patch3:        2623.patch
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2624
 # https://bugzilla.redhat.com/show_bug.cgi?id=2128660
 Patch4:        2624.patch
+
+# Backport handle garbage EDID patches
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2627
+# https://bugzilla.redhat.com/show_bug.cgi?id=2138453
+Patch5:        handle-garbage-edid.patch
 
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
@@ -182,6 +187,10 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/%{name}.desktop
 %{_datadir}/mutter-%{mutter_api_version}/tests
 
 %changelog
+* Tue Nov 01 2022 Jonas Ådahl <jadahl@redhat.com> - 43.0-4
+- Don't crash on garbabe EDID
+  Resolves: #2138453
+
 * Tue Sep 27 2022 Kalev Lember <klember@redhat.com> - 43.0-3
 - Rebuild to fix sysprof-capture symbols leaking into libraries consuming it
 
