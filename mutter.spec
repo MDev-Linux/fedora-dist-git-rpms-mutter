@@ -11,8 +11,8 @@
 %global tarball_version %%(echo %{version} | tr '~' '.')
 
 Name:          mutter
-Version:       43.0
-Release:       4%{?dist}
+Version:       43.1
+Release:       1%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -27,20 +27,6 @@ Patch1:        0001-Revert-build-Do-not-provide-built-sources-as-libmutt.patch
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
 Patch2:        mutter-42.alpha-disable-tegra.patch
-
-# Backported from upstream
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2623
-Patch3:        2623.patch
-
-# Backported from upstream
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2624
-# https://bugzilla.redhat.com/show_bug.cgi?id=2128660
-Patch4:        2624.patch
-
-# Backport handle garbage EDID patches
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2627
-# https://bugzilla.redhat.com/show_bug.cgi?id=2138453
-Patch5:        handle-garbage-edid.patch
 
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
@@ -187,6 +173,9 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/%{name}.desktop
 %{_datadir}/mutter-%{mutter_api_version}/tests
 
 %changelog
+* Fri Nov 04 2022 Florian Müllner <fmuellner@redhat.com> - 43.1-1
+- Update to 43.1
+
 * Tue Nov 01 2022 Jonas Ådahl <jadahl@redhat.com> - 43.0-4
 - Don't crash on garbabe EDID
   Resolves: #2138453
