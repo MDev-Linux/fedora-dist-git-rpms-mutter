@@ -12,7 +12,7 @@
 
 Name:          mutter
 Version:       43.1
-Release:       2%{?dist}
+Release:       3%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -34,6 +34,9 @@ Patch2:        mutter-42.alpha-disable-tegra.patch
 # Backport edge resistance fix
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2687
 Patch3:        post-43.1-fixes.patch
+
+# Hack for https://pagure.io/fedora-workstation/issue/79
+Patch4:         0001-place-Always-center-initial-setup-fedora-welcome.patch
 
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
@@ -180,6 +183,9 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/%{name}.desktop
 %{_datadir}/mutter-%{mutter_api_version}/tests
 
 %changelog
+* Fri Dec 02 2022 Florian Müllner <fmuellner@redhat.com> - 43.1-3
+- Always center some special windows
+
 * Thu Nov 17 2022 Jonas Ådahl <jadahl@redhat.com> - 43.1-2
 - Backport regression fixes
 
