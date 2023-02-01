@@ -12,7 +12,7 @@
 
 Name:          mutter
 Version:       43.2
-Release:       1%{?dist}
+Release:       2%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -27,6 +27,9 @@ Patch1:        0001-Revert-build-Do-not-provide-built-sources-as-libmutt.patch
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
 Patch2:        mutter-42.alpha-disable-tegra.patch
+
+# Backports that will be part of 43.3
+Patch3:        post-43.2-backports.patch
 
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
@@ -173,6 +176,9 @@ desktop-file-validate %{buildroot}/%{_datadir}/applications/%{name}.desktop
 %{_datadir}/mutter-%{mutter_api_version}/tests
 
 %changelog
+* Wed Feb 01 2023 Jonas Ådahl <jadahl@redhat.com> - 43.2-2
+- Backport patches on the gnome-43 branch
+
 * Wed Dec 07 2022 Florian Müllner <fmuellner@redhat.com> - 43.2-1
 - Update to 43.2
 
