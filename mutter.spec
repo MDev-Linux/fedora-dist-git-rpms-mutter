@@ -36,7 +36,7 @@ Patch2:        mutter-42.alpha-disable-tegra.patch
 Patch3:        post-43.1-fixes.patch
 
 # Only on F38 and later
-%if 0%{fedora} >= 38
+%if 0%{?fedora} >= 38
 # Add Xwayland byte-swapped clients support
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2785
 Patch4: 0001-settings-Add-Xwayland-byte-swapped-clients.patch
