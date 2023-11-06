@@ -9,6 +9,7 @@
 %global colord_version 1.4.5
 %global libei_version 1.0.0
 %global mutter_api_version 13
+%global xwayland_version 23.2.2
 
 %global tarball_version %%(echo %{version} | tr '~' '.')
 
@@ -95,7 +96,7 @@ BuildRequires: pkgconfig(libeis-1.0) >= %{libei_version}
 
 BuildRequires: pkgconfig(json-glib-1.0) >= %{json_glib_version}
 BuildRequires: pkgconfig(libinput) >= %{libinput_version}
-BuildRequires: pkgconfig(xwayland)
+BuildRequires: pkgconfig(xwayland) >= %{xwayland_version}
 
 Requires: control-center-filesystem
 Requires: gsettings-desktop-schemas%{?_isa} >= %{gsettings_desktop_schemas_version}
@@ -106,6 +107,7 @@ Requires: libinput%{?_isa} >= %{libinput_version}
 Requires: pipewire%{_isa} >= %{pipewire_version}
 Requires: startup-notification
 Requires: dbus
+Requires: xorg-x11-server-Xwayland >= %{xwayland_version}
 
 # Need common
 Requires: %{name}-common = %{version}-%{release}
