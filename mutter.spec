@@ -98,6 +98,7 @@ BuildRequires: pkgconfig(libeis-1.0) >= %{libei_version}
 BuildRequires: pkgconfig(json-glib-1.0) >= %{json_glib_version}
 BuildRequires: pkgconfig(libinput) >= %{libinput_version}
 BuildRequires: pkgconfig(xwayland)
+BuildRequires: pkgconfig(libdisplay-info)
 
 Requires: control-center-filesystem
 Requires: gsettings-desktop-schemas%{?_isa} >= %{gsettings_desktop_schemas_version}
@@ -108,6 +109,7 @@ Requires: libinput%{?_isa} >= %{libinput_version}
 Requires: pipewire%{_isa} >= %{pipewire_version}
 Requires: startup-notification
 Requires: dbus
+Requires: libdisplay-info
 
 # Need common
 Requires: %{name}-common = %{version}-%{release}
@@ -171,7 +173,7 @@ the functionality of the installed %{name} package.
 %autosetup -S git -n %{name}-%{tarball_version}
 
 %build
-%meson -Degl_device=true -Dwayland_eglstream=true
+%meson -Degl_device=true -Dwayland_eglstream=true -Dlibdisplay_info=true
 %meson_build
 
 %install
