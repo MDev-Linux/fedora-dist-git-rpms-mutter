@@ -44,6 +44,11 @@ Patch:         0001-Revert-x11-Use-input-region-from-frame-window-for-de.patch
 # which solves the problems reported with #3329 alone
 Patch: 0001-modified-3329.patch
 
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3721
+# https://gitlab.gnome.org/GNOME/mutter/-/issues/3458
+# Fix problem with popups not displaying in openQA tests
+Patch: 3721.patch
+
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
 BuildRequires: pkgconfig(libwacom)
