@@ -2,12 +2,16 @@
 %global gtk3_version 3.19.8
 %global gtk4_version 4.0.0
 %global gsettings_desktop_schemas_version 47~beta
+%global libdrm_version 2.4.118
 %global libinput_version 1.26.0
+%global pixman_version 0.42
 %global pipewire_version 1.2.0
 %global lcms2_version 2.6
 %global colord_version 1.4.5
 %global libei_version 1.3.901
 %global mutter_api_version 17
+%global wayland_protocols_version 1.45
+%global wayland_server_version 1.24
 
 %global major_version %%(echo %{version} | cut -d '.' -f1 | cut -d '~' -f 1)
 %global tarball_version %%(echo %{version} | tr '~' '.')
@@ -58,16 +62,17 @@ BuildRequires: pkgconfig(gbm)
 BuildRequires: pkgconfig(glycin-2)
 BuildRequires: pkgconfig(gnome-desktop-4)
 BuildRequires: pkgconfig(gudev-1.0)
-BuildRequires: pkgconfig(libdrm)
+BuildRequires: pkgconfig(libdrm) >= %{libdrm_version}
 BuildRequires: pkgconfig(libstartup-notification-1.0)
-BuildRequires: pkgconfig(wayland-protocols)
-BuildRequires: pkgconfig(wayland-server)
+BuildRequires: pkgconfig(wayland-protocols) >= %{wayland_protocols_version}
+BuildRequires: pkgconfig(wayland-server) >= %{wayland_server_version}
 BuildRequires: pkgconfig(lcms2) >= %{lcms2_version}
 BuildRequires: pkgconfig(colord) >= %{colord_version}
 BuildRequires: pkgconfig(libei-1.0) >= %{libei_version}
 BuildRequires: pkgconfig(libeis-1.0) >= %{libei_version}
 
 BuildRequires: pkgconfig(libinput) >= %{libinput_version}
+BuildRequires: pkgconfig(pixman-1) >= %{pixman_version}
 BuildRequires: pkgconfig(xwayland)
 BuildRequires: pkgconfig(bash-completion)
 
