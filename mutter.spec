@@ -13,7 +13,7 @@
 %global tarball_version %%(echo %{version} | tr '~' '.')
 
 Name:          mutter
-Version:       46.1
+Version:       46.2
 Release:       %autorelease
 Summary:       Window and compositing manager based on Clutter
 
@@ -43,11 +43,6 @@ Patch:         0001-Revert-x11-Use-input-region-from-frame-window-for-de.patch
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329#note_1874837
 # which solves the problems reported with #3329 alone
 Patch: 0001-modified-3329.patch
-
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3721
-# https://gitlab.gnome.org/GNOME/mutter/-/issues/3458
-# Fix problem with popups not displaying in openQA tests
-Patch: 3721.patch
 
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
