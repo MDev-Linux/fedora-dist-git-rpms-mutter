@@ -2,24 +2,23 @@
 %global gtk3_version 3.19.8
 %global gtk4_version 4.0.0
 %global gsettings_desktop_schemas_version 40~alpha
-%global json_glib_version 0.12.0
 %global libinput_version 1.19.0
 %global pipewire_version 0.3.33
 %global lcms2_version 2.6
 %global colord_version 1.4.5
-%global libei_version 1.0.0
-%global mutter_api_version 14
+%global libei_version 1.0.901
+%global mutter_api_version 15
 
 %global tarball_version %%(echo %{version} | tr '~' '.')
 
 Name:          mutter
-Version:       46.2
+Version:       47~alpha
 Release:       %autorelease
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
 URL:           http://www.gnome.org
-Source0:       http://download.gnome.org/sources/%{name}/45/%{name}-%{tarball_version}.tar.xz
+Source0:       http://download.gnome.org/sources/%{name}/47/%{name}-%{tarball_version}.tar.xz
 
 # Work-around for OpenJDK's compliance test
 Patch:         0001-window-actor-Special-case-shaped-Java-windows.patch
@@ -96,7 +95,6 @@ BuildRequires: pkgconfig(colord) >= %{colord_version}
 BuildRequires: pkgconfig(libei-1.0) >= %{libei_version}
 BuildRequires: pkgconfig(libeis-1.0) >= %{libei_version}
 
-BuildRequires: pkgconfig(json-glib-1.0) >= %{json_glib_version}
 BuildRequires: pkgconfig(libinput) >= %{libinput_version}
 BuildRequires: pkgconfig(xwayland)
 
@@ -106,7 +104,6 @@ Requires: control-center-filesystem
 Requires: gsettings-desktop-schemas%{?_isa} >= %{gsettings_desktop_schemas_version}
 Requires: gnome-settings-daemon
 Requires: gtk4%{?_isa} >= %{gtk4_version}
-Requires: json-glib%{?_isa} >= %{json_glib_version}
 Requires: libinput%{?_isa} >= %{libinput_version}
 Requires: pipewire%{_isa} >= %{pipewire_version}
 Requires: startup-notification
