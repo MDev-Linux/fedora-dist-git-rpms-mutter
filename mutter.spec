@@ -16,7 +16,8 @@ Version:       47~alpha
 Release:       %autorelease
 Summary:       Window and compositing manager based on Clutter
 
-License:       GPLv2+
+# Automatically converted from old format: GPLv2+ - review is highly recommended.
+License:       GPL-2.0-or-later
 URL:           http://www.gnome.org
 Source0:       http://download.gnome.org/sources/%{name}/47/%{name}-%{tarball_version}.tar.xz
 
