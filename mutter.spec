@@ -53,6 +53,11 @@ Patch: 3862.patch
 # Don't crash the entire desktop when Fonts flatpak crashes
 Patch: 0001-wayland-Use-separate-signal-handlers-to-track-pendin.patch
 
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3848
+# https://gitlab.gnome.org/GNOME/mutter/-/issues/3556
+# Fix build with libdrm >= 2.4.122
+Patch: 0001-backend-native-Define-struct-drm_plane_size_hint-onl.patch
+
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
 BuildRequires: pkgconfig(libwacom)
