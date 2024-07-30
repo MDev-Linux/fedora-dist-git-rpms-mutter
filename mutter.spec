@@ -48,6 +48,11 @@ Patch: 0001-modified-3329.patch
 # fix anaconda
 Patch: 3862.patch
 
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3860
+# https://gitlab.gnome.org/GNOME/mutter/-/issues/3561
+# Don't crash the entire desktop when Fonts flatpak crashes
+Patch: 0001-wayland-Use-separate-signal-handlers-to-track-pendin.patch
+
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
 BuildRequires: pkgconfig(libwacom)
