@@ -12,7 +12,7 @@
 %global tarball_version %%(echo %{version} | tr '~' '.')
 
 Name:          mutter
-Version:       47~alpha
+Version:       47~beta
 Release:       %autorelease
 Summary:       Window and compositing manager based on Clutter
 
@@ -37,26 +37,6 @@ Patch:         0001-gschema-Enable-scale-monitor-framebuffer-experimenta.patch
 # not upstreamed because for upstream we'd really want to find a way
 # to fix *both* problems
 Patch:         0001-Revert-x11-Use-input-region-from-frame-window-for-de.patch
-
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329
-# Modified to add the change from
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329#note_1874837
-# which solves the problems reported with #3329 alone
-Patch: 0001-modified-3329.patch
-
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3862
-# fix anaconda
-Patch: 3862.patch
-
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3860
-# https://gitlab.gnome.org/GNOME/mutter/-/issues/3561
-# Don't crash the entire desktop when Fonts flatpak crashes
-Patch: 0001-wayland-Use-separate-signal-handlers-to-track-pendin.patch
-
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3848
-# https://gitlab.gnome.org/GNOME/mutter/-/issues/3556
-# Fix build with libdrm >= 2.4.122
-Patch: 0001-backend-native-Define-struct-drm_plane_size_hint-onl.patch
 
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
