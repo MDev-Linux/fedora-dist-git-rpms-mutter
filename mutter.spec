@@ -38,6 +38,10 @@ Patch:         0001-gschema-Enable-scale-monitor-framebuffer-experimenta.patch
 # to fix *both* problems
 Patch:         0001-Revert-x11-Use-input-region-from-frame-window-for-de.patch
 
+# Fix resizig of electron windows
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3997
+Patch:         0001-window-xwayland-Handle-arithmetics-close-to-the-int-.patch
+
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
 BuildRequires: pkgconfig(libwacom)
