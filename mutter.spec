@@ -12,7 +12,7 @@
 %global tarball_version %%(echo %{version} | tr '~' '.')
 
 Name:          mutter
-Version:       47~rc
+Version:       47.0
 Release:       %autorelease
 Summary:       Window and compositing manager based on Clutter
 
@@ -37,10 +37,6 @@ Patch:         0001-gschema-Enable-scale-monitor-framebuffer-experimenta.patch
 # not upstreamed because for upstream we'd really want to find a way
 # to fix *both* problems
 Patch:         0001-Revert-x11-Use-input-region-from-frame-window-for-de.patch
-
-# Fix resizig of electron windows
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3997
-Patch:         0001-window-xwayland-Handle-arithmetics-close-to-the-int-.patch
 
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
