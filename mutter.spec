@@ -20,18 +20,19 @@ Summary:       Window and compositing manager based on Clutter
 License:       GPL-2.0-or-later
 URL:           http://www.gnome.org
 Source0:       http://download.gnome.org/sources/%{name}/48/%{name}-%{tarball_version}.tar.xz
+Source1:       org.gnome.mutter.fedora.gschema.override
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
 Patch:         mutter-42.alpha-disable-tegra.patch
-
-# https://pagure.io/fedora-workstation/issue/357
-Patch:         0001-gschema-Enable-fractional-scaling-experimental-featu.patch
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=2239128
 # https://gitlab.gnome.org/GNOME/mutter/-/issues/3068
 # not upstreamed because for upstream we'd really want to find a way
 # to fix *both* problems
 Patch:         0001-Revert-x11-Use-input-region-from-frame-window-for-de.patch
+
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/4307
+Patch:         fix-cursor-shape-crash.patch
 
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
@@ -167,6 +168,7 @@ the functionality of the installed %{name} package.
 
 %install
 %meson_install
+install -p %{SOURCE1} %{buildroot}%{_datadir}/glib-2.0/schemas
 
 %find_lang %{name}
 
@@ -185,6 +187,7 @@ the functionality of the installed %{name} package.
 
 %files common
 %{_datadir}/GConf/gsettings/mutter-schemas.convert
+%{_datadir}/glib-2.0/schemas/org.gnome.mutter.fedora.gschema.override
 %{_datadir}/glib-2.0/schemas/org.gnome.mutter.gschema.xml
 %{_datadir}/glib-2.0/schemas/org.gnome.mutter.wayland.gschema.xml
 %{_datadir}/gnome-control-center/keybindings/50-mutter-*.xml
