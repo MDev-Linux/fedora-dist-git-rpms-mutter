@@ -1,0 +1,261 @@
+From cf54bc5c1d22ad6861c08bca10a8b1a2747c5ba8 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Thu, 6 Mar 2025 12:46:00 +0100
+Subject: [PATCH 1/4] kms/impl-device: Refactor
+ meta_kms_impl_device_do_process_update helper
+
+Preparation for next commit, no functional change intended.
+---
+ src/backends/native/meta-kms-impl-device.c | 59 ++++++++++++++--------
+ 1 file changed, 37 insertions(+), 22 deletions(-)
+
+diff --git a/src/backends/native/meta-kms-impl-device.c b/src/backends/native/meta-kms-impl-device.c
+index 230adb3730..73ac6cfce0 100644
+--- a/src/backends/native/meta-kms-impl-device.c
++++ b/src/backends/native/meta-kms-impl-device.c
+@@ -1842,6 +1842,40 @@ queue_update (MetaKmsImplDevice *impl_device,
+     }
+ }
+ 
++static void
++meta_kms_impl_device_do_process_update (MetaKmsImplDevice *impl_device,
++                                        CrtcFrame         *crtc_frame,
++                                        MetaKmsCrtc       *latch_crtc,
++                                        MetaKmsUpdate     *update,
++                                        MetaKmsUpdateFlag  flags)
++{
++  MetaKmsImplDevicePrivate *priv =
++    meta_kms_impl_device_get_instance_private (impl_device);
++  MetaKmsFeedback *feedback;
++
++  if (crtc_frame->pending_update)
++    {
++      if (update != crtc_frame->pending_update)
++        {
++          meta_kms_update_merge_from (crtc_frame->pending_update, update);
++          meta_kms_update_free (update);
++        }
++
++      update = g_steal_pointer (&crtc_frame->pending_update);
++      disarm_crtc_frame_deadline_timer (crtc_frame);
++    }
++
++  meta_kms_device_handle_flush (priv->device, latch_crtc);
++
++  feedback = do_process (impl_device, latch_crtc, update, flags);
++
++  if (meta_kms_feedback_did_pass (feedback) &&
++      crtc_frame->deadline.armed)
++    disarm_crtc_frame_deadline_timer (crtc_frame);
++
++  meta_kms_feedback_unref (feedback);
++}
++
+ static gpointer
+ meta_kms_impl_device_update_ready (MetaThreadImpl  *impl,
+                                    gpointer         user_data,
+@@ -1855,7 +1889,6 @@ meta_kms_impl_device_update_ready (MetaThreadImpl  *impl,
+   gboolean want_deadline_timer;
+   MetaKmsUpdate *update;
+   MetaKmsCrtc *latch_crtc;
+-  MetaKmsFeedback *feedback;
+ 
+   meta_assert_in_kms_impl (meta_kms_impl_get_kms (priv->impl));
+ 
+@@ -1891,27 +1924,9 @@ meta_kms_impl_device_update_ready (MetaThreadImpl  *impl,
+         return GINT_TO_POINTER (TRUE);
+     }
+ 
+-  if (crtc_frame->pending_update)
+-    {
+-      if (update != crtc_frame->pending_update)
+-        {
+-          meta_kms_update_merge_from (crtc_frame->pending_update, update);
+-          meta_kms_update_free (update);
+-        }
+-
+-      update = g_steal_pointer (&crtc_frame->pending_update);
+-      disarm_crtc_frame_deadline_timer (crtc_frame);
+-    }
+-
+-  meta_kms_device_handle_flush (priv->device, latch_crtc);
+-
+-  feedback = do_process (impl_device, latch_crtc, update, crtc_frame->submitted_update.flags);
+-
+-  if (meta_kms_feedback_did_pass (feedback) &&
+-      crtc_frame->deadline.armed)
+-    disarm_crtc_frame_deadline_timer (crtc_frame);
+-
+-  meta_kms_feedback_unref (feedback);
++  meta_kms_impl_device_do_process_update (impl_device, crtc_frame, latch_crtc,
++                                          update,
++                                          crtc_frame->submitted_update.flags);
+ 
+   return GINT_TO_POINTER (TRUE);
+ }
+-- 
+GitLab
+
+
+From 2830f27ed59cfe356f50daafea71c35577a32b90 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Thu, 6 Mar 2025 17:20:38 +0100
+Subject: [PATCH 2/4] kms/impl-device: Don't set_needs_flush if there's a
+ pending page flip
+
+Just make sure notify_crtc_frame_ready will call
+meta_kms_impl_device_schedule_process again when the flip completes.
+
+This is sufficient to avoid
+https://gitlab.gnome.org/GNOME/mutter/-/issues/3002 .
+---
+ src/backends/native/meta-kms-impl-device.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
+
+diff --git a/src/backends/native/meta-kms-impl-device.c b/src/backends/native/meta-kms-impl-device.c
+index 73ac6cfce0..3b32ba4d0c 100644
+--- a/src/backends/native/meta-kms-impl-device.c
++++ b/src/backends/native/meta-kms-impl-device.c
+@@ -67,6 +67,7 @@ typedef struct _CrtcDeadline
+   MetaKmsCrtc *crtc;
+   MetaKmsUpdate *pending_update;
+   gboolean await_flush;
++  gboolean need_schedule;
+   gboolean pending_page_flip;
+ 
+   struct {
+@@ -1423,7 +1424,7 @@ notify_crtc_frame_ready (CrtcFrame *crtc_frame)
+   crtc_frame->pending_page_flip = FALSE;
+   crtc_frame->deadline.is_deadline_page_flip = FALSE;
+ 
+-  if (!crtc_frame->pending_update)
++  if (!crtc_frame->pending_update && !crtc_frame->need_schedule)
+     return;
+ 
+   if (crtc_frame->await_flush)
+@@ -2070,17 +2071,19 @@ meta_kms_impl_device_schedule_process (MetaKmsImplDevice *impl_device,
+ 
+   crtc_frame = ensure_crtc_frame (impl_device, crtc);
+ 
++  if (crtc_frame->pending_page_flip)
++    {
++      crtc_frame->need_schedule = TRUE;
++      return;
++    }
++  crtc_frame->need_schedule = FALSE;
++
+   if (crtc_frame->await_flush)
+     return;
+ 
+-  if (is_using_deadline_timer (impl_device))
+-    {
+-      if (crtc_frame->pending_page_flip)
+-        return;
+-
+-      if (ensure_deadline_timer_armed (impl_device, crtc_frame))
+-        return;
+-    }
++  if (is_using_deadline_timer (impl_device) &&
++      ensure_deadline_timer_armed (impl_device, crtc_frame))
++    return;
+ 
+   meta_kms_device_set_needs_flush (meta_kms_crtc_get_device (crtc), crtc);
+ }
+-- 
+GitLab
+
+
+From d05b95202c24a44ddbfa151b4aee350363afabd6 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Thu, 6 Mar 2025 16:31:47 +0100
+Subject: [PATCH 3/4] kms/impl-device: Process pending update from
+ _schedule_process
+
+Instead of asking the main thread to do a frame update, which may or may
+not result in a new KMS update. If it doesn't, the pending update may
+never get processed, and the main thread may wait indefinitely for it,
+resulting in the stage view visibly freezing.
+
+Closes: https://gitlab.gnome.org/GNOME/mutter/-/issues/3955
+
+v2:
+* Don't return immediately after calling
+  meta_kms_impl_device_do_process_update. (Sebastian Wick)
+---
+ src/backends/native/meta-kms-impl-device.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/src/backends/native/meta-kms-impl-device.c b/src/backends/native/meta-kms-impl-device.c
+index 3b32ba4d0c..4f612ced9d 100644
+--- a/src/backends/native/meta-kms-impl-device.c
++++ b/src/backends/native/meta-kms-impl-device.c
+@@ -2085,6 +2085,14 @@ meta_kms_impl_device_schedule_process (MetaKmsImplDevice *impl_device,
+       ensure_deadline_timer_armed (impl_device, crtc_frame))
+     return;
+ 
++  if (crtc_frame->pending_update)
++    {
++      meta_kms_impl_device_do_process_update (impl_device, crtc_frame,
++                                              crtc_frame->crtc,
++                                              crtc_frame->pending_update,
++                                              META_KMS_UPDATE_FLAG_NONE);
++    }
++
+   meta_kms_device_set_needs_flush (meta_kms_crtc_get_device (crtc), crtc);
+ }
+ 
+-- 
+GitLab
+
+
+From 786005773e29d8c207649b1e461a73a0e233cbff Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Wed, 5 Mar 2025 19:06:05 +0100
+Subject: [PATCH 4/4] kms/impl-device: Don't disable deadline timer due to
+ invalid mode
+
+If crtc->current_state.is_drm_mode_valid happens to be FALSE,
+meta_kms_crtc_determine_deadline returns G_IO_ERROR_NOT_FOUND. This
+previously resulted in silently and permanently disabling the deadline
+timer, which is surprising and undesirable.
+
+Bail early from ensure_deadline_timer_armed in this case instead. In
+turn, G_IO_ERROR_NOT_FOUND from meta_kms_crtc_determine_deadline no
+longer needs to be treated specially.
+
+Fixes: 7493ed39ce20 ("kms/impl-device: Avoid retrying a failing deadline timer")
+
+v2:
+* Stop treating G_IO_ERROR_NOT_FOUND specially. (Sebastian Wick)
+---
+ src/backends/native/meta-kms-impl-device.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/src/backends/native/meta-kms-impl-device.c b/src/backends/native/meta-kms-impl-device.c
+index 4f612ced9d..1ab172c993 100644
+--- a/src/backends/native/meta-kms-impl-device.c
++++ b/src/backends/native/meta-kms-impl-device.c
+@@ -1383,6 +1383,9 @@ ensure_deadline_timer_armed (MetaKmsImplDevice *impl_device,
+   if (crtc_frame->deadline.armed)
+     return TRUE;
+ 
++  if (!meta_kms_crtc_get_current_state (crtc_frame->crtc)->is_drm_mode_valid)
++    return FALSE;
++
+   if (!meta_kms_crtc_determine_deadline (crtc_frame->crtc,
+                                          &next_deadline_us,
+                                          &next_presentation_us,
+@@ -1400,9 +1403,7 @@ ensure_deadline_timer_armed (MetaKmsImplDevice *impl_device,
+         }
+       else
+         {
+-          if (!g_error_matches (local_error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+-            g_warning ("Failed to determine deadline: %s", local_error->message);
+-
++          g_warning ("Failed to determine deadline: %s", local_error->message);
+           priv->deadline_timer_state = META_DEADLINE_TIMER_STATE_DISABLED;
+         }
+ 
+-- 
+GitLab
+
