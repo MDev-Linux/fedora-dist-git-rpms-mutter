@@ -85,6 +85,7 @@ BuildRequires: pkgconfig(libeis-1.0) >= %{libei_version}
 
 BuildRequires: pkgconfig(libinput) >= %{libinput_version}
 BuildRequires: pkgconfig(xwayland)
+BuildRequires: pkgconfig(bash-completion)
 
 BuildRequires: python3-dbusmock
 
@@ -180,7 +181,7 @@ install -p %{SOURCE1} %{buildroot}%{_datadir}/glib-2.0/schemas
 %{_mandir}/man1/mutter.1*
 %{_bindir}/gdctl
 %{_mandir}/man1/gdctl.1*
-%{_sysconfdir}/bash_completion.d/gdctl
+%{completionsdir}/gdctl
 
 %files common
 %{_datadir}/GConf/gsettings/mutter-schemas.convert
