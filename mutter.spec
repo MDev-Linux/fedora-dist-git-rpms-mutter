@@ -176,6 +176,7 @@ install -p %{SOURCE1} %{buildroot}%{_datadir}/glib-2.0/schemas
 %{_bindir}/mutter
 %{_libdir}/lib*.so.*
 %{_libdir}/mutter-%{mutter_api_version}/
+%exclude %{_libdir}/mutter-%{mutter_api_version}/*.gir
 %{_libexecdir}/mutter-restart-helper
 %{_libexecdir}/mutter-x11-frames
 %{_mandir}/man1/mutter.1*
@@ -194,6 +195,7 @@ install -p %{SOURCE1} %{buildroot}%{_datadir}/glib-2.0/schemas
 %files devel
 %{_includedir}/*
 %{_libdir}/lib*.so
+%{_libdir}/mutter-%{mutter_api_version}/*.gir
 %{_libdir}/pkgconfig/*
 
 %files tests
