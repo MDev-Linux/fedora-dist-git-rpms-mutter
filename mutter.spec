@@ -182,7 +182,7 @@ install -p %{SOURCE1} %{buildroot}%{_datadir}/glib-2.0/schemas
 %{_mandir}/man1/mutter.1*
 %{_bindir}/gdctl
 %{_mandir}/man1/gdctl.1*
-%{completionsdir}/gdctl
+%{_datadir}/bash-completion/completions/gdctl
 
 %files common
 %{_datadir}/GConf/gsettings/mutter-schemas.convert
