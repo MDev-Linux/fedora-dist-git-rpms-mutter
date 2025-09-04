@@ -58,6 +58,7 @@ BuildRequires: pkgconfig(gsettings-desktop-schemas) >= %{gsettings_desktop_schem
 BuildRequires: pkgconfig(gnome-settings-daemon)
 BuildRequires: meson
 BuildRequires: pkgconfig(gbm)
+BuildRequires: pkgconfig(glycin-2)
 BuildRequires: pkgconfig(gnome-desktop-4)
 BuildRequires: pkgconfig(gudev-1.0)
 BuildRequires: pkgconfig(libdrm)
