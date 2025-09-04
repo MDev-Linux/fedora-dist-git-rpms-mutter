@@ -31,20 +31,9 @@ Patch:         window-drag-bug.patch
 
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
+BuildRequires: pkgconfig(libadwaita-1)
 BuildRequires: pkgconfig(libwacom)
-BuildRequires: pkgconfig(xdamage)
-BuildRequires: pkgconfig(xext)
-BuildRequires: pkgconfig(xfixes)
-BuildRequires: pkgconfig(xi)
-BuildRequires: pkgconfig(xrandr)
-BuildRequires: pkgconfig(xrender)
-BuildRequires: pkgconfig(xcursor)
-BuildRequires: pkgconfig(xcomposite)
-BuildRequires: pkgconfig(x11-xcb)
 BuildRequires: pkgconfig(xkbcommon)
-BuildRequires: pkgconfig(xkbcommon-x11)
-BuildRequires: pkgconfig(xkbfile)
-BuildRequires: pkgconfig(xtst)
 BuildRequires: mesa-libEGL-devel
 BuildRequires: mesa-libGLES-devel
 BuildRequires: mesa-libGL-devel
@@ -57,7 +46,6 @@ BuildRequires: pkgconfig(libpipewire-0.3) >= %{pipewire_version}
 BuildRequires: pkgconfig(sysprof-capture-4)
 BuildRequires: sysprof-devel
 BuildRequires: pkgconfig(libsystemd)
-BuildRequires: pkgconfig(xkeyboard-config)
 BuildRequires: pkgconfig(umockdev-1.0)
 BuildRequires: desktop-file-utils
 BuildRequires: cvt
@@ -159,10 +147,7 @@ the functionality of the installed %{name} package.
 %autosetup -S git -n %{name}-%{tarball_version}
 
 %build
-%meson \
-  -Ddevkit=disabled \
-  -Degl_device=true \
-  %{nil}
+%meson -Degl_device=true
 %meson_build
 
 %install
@@ -196,10 +181,14 @@ install -p %{SOURCE1} %{buildroot}%{_datadir}/glib-2.0/schemas
 %{_udevrulesdir}/61-mutter.rules
 
 %files devel
+%{_datadir}/applications/org.gnome.Mutter.Mdk.desktop
+%{_datadir}/glib-2.0/schemas/org.gnome.mutter.devkit.gschema.xml
+%{_datadir}/icons/hicolor/*/apps/org.gnome.Mutter.Mdk*
 %{_includedir}/*
 %{_libdir}/lib*.so
 %{_libdir}/mutter-%{mutter_api_version}/*.gir
 %{_libdir}/pkgconfig/*
+%{_libexecdir}/mutter-devkit
 
 %files tests
 %{_libexecdir}/installed-tests/mutter-%{mutter_api_version}
