@@ -12,14 +12,8 @@
 %global major_version %%(echo %{version} | cut -d '.' -f1 | cut -d '~' -f 1)
 %global tarball_version %%(echo %{version} | tr '~' '.')
 
-%if 0%{?fedora} && 0%{?fedora} < 43
-%bcond x11 1
-%else
-%bcond x11 0
-%endif
-
 Name:          mutter
-Version:       49~beta
+Version:       49~rc
 Release:       %autorelease
 Summary:       Window and compositing manager based on Clutter
 
@@ -32,15 +26,12 @@ Source1:       org.gnome.mutter.fedora.gschema.override
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
 Patch:         mutter-42.alpha-disable-tegra.patch
 
-# https://gitlab.gnome.org/GNOME/mutter/-/issues/4206
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/4550
-# Fix crash when locking screen on VMs
-Patch:         0001-clutter-Skip-null-actors-in-create_event_emission_ch.patch
+# First 4 commits from https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/4607
+Patch:         window-drag-bug.patch
 
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
 BuildRequires: pkgconfig(libwacom)
-BuildRequires: pkgconfig(x11)
 BuildRequires: pkgconfig(xdamage)
 BuildRequires: pkgconfig(xext)
 BuildRequires: pkgconfig(xfixes)
@@ -168,12 +159,10 @@ the functionality of the installed %{name} package.
 %autosetup -S git -n %{name}-%{tarball_version}
 
 %build
-%meson -Degl_device=true \
-%if %{without x11}
-  -Dx11=false \
-%endif
-%{nil}
-
+%meson \
+  -Ddevkit=disabled \
+  -Degl_device=true \
+  %{nil}
 %meson_build
 
 %install
@@ -186,22 +175,17 @@ install -p %{SOURCE1} %{buildroot}%{_datadir}/glib-2.0/schemas
 %license COPYING
 %doc NEWS
 %{_bindir}/mutter
-%{_datadir}/applications/*.desktop
-%{_datadir}/icons/hicolor/*/*/*
 %{_datadir}/polkit-1/actions/org.gnome.mutter.*.policy
 %{_bindir}/gdctl
+%{_bindir}/gnome-service-client
 %{_datadir}/bash-completion/completions/gdctl
 %{_libdir}/lib*.so.*
 %{_libdir}/mutter-%{mutter_api_version}/
-%if %{with x11}
-%exclude %{_libdir}/mutter-%{mutter_api_version}/*.gir
-%{_libexecdir}/mutter-restart-helper
-%endif
 %{_libexecdir}/mutter-backlight-helper
-%{_libexecdir}/mutter-devkit
 %{_libexecdir}/mutter-x11-frames
 %{_mandir}/man1/mutter.1*
 %{_mandir}/man1/gdctl.1*
+%{_mandir}/man1/gnome-service-client.1*
 
 %files common
 %{_datadir}/GConf/gsettings/mutter-schemas.convert

@@ -1,0 +1,377 @@
+From 7ff3b1fe7b30584a585f5b4a9887529a4a4eb3ec Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Thu, 28 Aug 2025 10:09:47 +0200
+Subject: [PATCH 01/25] window-drag: Move window resize size calculation into
+ helper
+
+This will make it usable to calculate a new window size from a window
+drag in places that depend on it.
+---
+ src/compositor/meta-window-drag.c | 109 ++++++++++++++++++------------
+ 1 file changed, 65 insertions(+), 44 deletions(-)
+
+diff --git a/src/compositor/meta-window-drag.c b/src/compositor/meta-window-drag.c
+index 71aac9b549..80a8ac33ce 100644
+--- a/src/compositor/meta-window-drag.c
++++ b/src/compositor/meta-window-drag.c
+@@ -1428,6 +1428,67 @@ queue_update_move (MetaWindowDrag          *window_drag,
+                      window_drag, NULL);
+ }
+ 
++static void
++calculate_window_size (MetaWindowDrag          *window_drag,
++                       MetaEdgeResistanceFlags  flags,
++                       int                     *out_width,
++                       int                     *out_height)
++{
++  MetaWindow *window;
++  int dx, dy;
++  MetaGravity gravity;
++  MtkRectangle old_rect;
++  MtkRectangle new_rect = {};
++
++  window = window_drag->effective_grab_window;
++  g_return_if_fail (window);
++
++  meta_window_get_frame_rect (window, &old_rect);
++
++  new_rect.width = window_drag->initial_window_pos.width;
++  new_rect.height = window_drag->initial_window_pos.height;
++
++  dx = window_drag->latest_motion_x - window_drag->anchor_root_x;
++  dy = window_drag->latest_motion_y - window_drag->anchor_root_y;
++
++  if (window_drag->grab_op & META_GRAB_OP_WINDOW_DIR_EAST)
++    new_rect.width += dx;
++  else if (window_drag->grab_op & META_GRAB_OP_WINDOW_DIR_WEST)
++    new_rect.width -= dx;
++
++  if (window_drag->grab_op & META_GRAB_OP_WINDOW_DIR_SOUTH)
++    new_rect.height += dy;
++  else if (window_drag->grab_op & META_GRAB_OP_WINDOW_DIR_NORTH)
++    new_rect.height -= dy;
++
++  meta_window_maybe_apply_size_hints (window, &new_rect);
++
++  /* One sided resizing ought to actually be one-sided, despite the fact that
++   * aspect ratio windows don't interact nicely with the above stuff.  So,
++   * to avoid some nasty flicker, we enforce that.
++   */
++
++  if (!(window_drag->grab_op & (META_GRAB_OP_WINDOW_DIR_WEST |
++                                META_GRAB_OP_WINDOW_DIR_EAST)))
++    new_rect.width = old_rect.width;
++
++  if (!(window_drag->grab_op & (META_GRAB_OP_WINDOW_DIR_NORTH |
++                                META_GRAB_OP_WINDOW_DIR_SOUTH)))
++    new_rect.height = old_rect.height;
++
++  gravity = meta_resize_gravity_from_grab_op (window_drag->grab_op);
++  g_assert (gravity >= 0);
++
++  meta_window_drag_edge_resistance_for_resize (window_drag,
++                                               &new_rect.width,
++                                               &new_rect.height,
++                                               gravity,
++                                               flags);
++
++  *out_width = new_rect.width;
++  *out_height = new_rect.height;
++}
++
+ static void
+ update_resize (MetaWindowDrag          *window_drag,
+                MetaEdgeResistanceFlags  flags,
+@@ -1435,9 +1496,7 @@ update_resize (MetaWindowDrag          *window_drag,
+                int                      y)
+ {
+   int dx, dy;
+-  MetaGravity gravity;
+-  MtkRectangle new_rect;
+-  MtkRectangle old_rect;
++  int new_width, new_height;
+   MetaWindow *window;
+ 
+   window = window_drag->effective_grab_window;
+@@ -1462,9 +1521,6 @@ update_resize (MetaWindowDrag          *window_drag,
+       dy *= 2;
+     }
+ 
+-  new_rect.width = window_drag->initial_window_pos.width;
+-  new_rect.height = window_drag->initial_window_pos.height;
+-
+   /* Don't bother doing anything if no move has been specified.  (This
+    * happens often, even in keyboard resizing, due to the warping of the
+    * pointer.
+@@ -1472,6 +1528,8 @@ update_resize (MetaWindowDrag          *window_drag,
+   if (dx == 0 && dy == 0)
+     return;
+ 
++  calculate_window_size (window_drag, flags, &new_width, &new_height);
++
+   if ((window_drag->grab_op & META_GRAB_OP_KEYBOARD_RESIZING_UNKNOWN) ==
+       META_GRAB_OP_KEYBOARD_RESIZING_UNKNOWN)
+     {
+@@ -1494,18 +1552,6 @@ update_resize (MetaWindowDrag          *window_drag,
+       update_keyboard_resize (window_drag, TRUE);
+     }
+ 
+-  if (window_drag->grab_op & META_GRAB_OP_WINDOW_DIR_EAST)
+-    new_rect.width += dx;
+-  else if (window_drag->grab_op & META_GRAB_OP_WINDOW_DIR_WEST)
+-    new_rect.width -= dx;
+-
+-  if (window_drag->grab_op & META_GRAB_OP_WINDOW_DIR_SOUTH)
+-    new_rect.height += dy;
+-  else if (window_drag->grab_op & META_GRAB_OP_WINDOW_DIR_NORTH)
+-    new_rect.height -= dy;
+-
+-  meta_window_maybe_apply_size_hints (window, &new_rect);
+-
+   /* If we're waiting for a request for _NET_WM_SYNC_REQUEST, we'll
+    * resize the window when the window responds, or when we time
+    * the response out.
+@@ -1516,35 +1562,10 @@ update_resize (MetaWindowDrag          *window_drag,
+     return;
+ #endif
+ 
+-  meta_window_get_frame_rect (window, &old_rect);
+-
+-  /* One sided resizing ought to actually be one-sided, despite the fact that
+-   * aspect ratio windows don't interact nicely with the above stuff.  So,
+-   * to avoid some nasty flicker, we enforce that.
+-   */
+-
+-  if ((window_drag->grab_op & (META_GRAB_OP_WINDOW_DIR_WEST | META_GRAB_OP_WINDOW_DIR_EAST)) == 0)
+-    new_rect.width = old_rect.width;
+-
+-  if ((window_drag->grab_op & (META_GRAB_OP_WINDOW_DIR_NORTH | META_GRAB_OP_WINDOW_DIR_SOUTH)) == 0)
+-    new_rect.height = old_rect.height;
+-
+-  /* compute gravity of client during operation */
+-  gravity = meta_resize_gravity_from_grab_op (window_drag->grab_op);
+-  g_assert (gravity >= 0);
+-
+   window_drag->last_edge_resistance_flags =
+     flags & ~META_EDGE_RESISTANCE_KEYBOARD_OP;
+ 
+-  /* Do any edge resistance/snapping */
+-  meta_window_drag_edge_resistance_for_resize (window_drag,
+-                                               &new_rect.width,
+-                                               &new_rect.height,
+-                                               gravity,
+-                                               flags);
+-
+-  meta_window_resize_frame (window, TRUE,
+-			    new_rect.width, new_rect.height);
++  meta_window_resize_frame (window, TRUE, new_width, new_height);
+ }
+ 
+ static gboolean
+-- 
+GitLab
+
+
+From 0580078e8d8ea29490e488263f7bdf93e9cbd7ec Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Thu, 28 Aug 2025 10:17:30 +0200
+Subject: [PATCH 02/25] window-drag: Add helper API to calculate window size
+
+This will allow code that wants an up to date window size according to
+an active drag to calculate it directly.
+---
+ src/compositor/meta-window-drag.c | 11 +++++++++++
+ src/compositor/meta-window-drag.h |  4 ++++
+ 2 files changed, 15 insertions(+)
+
+diff --git a/src/compositor/meta-window-drag.c b/src/compositor/meta-window-drag.c
+index 80a8ac33ce..f04808e742 100644
+--- a/src/compositor/meta-window-drag.c
++++ b/src/compositor/meta-window-drag.c
+@@ -1949,6 +1949,17 @@ meta_window_drag_update_resize (MetaWindowDrag *window_drag)
+                  window_drag->latest_motion_y);
+ }
+ 
++void
++meta_window_drag_calculate_window_size (MetaWindowDrag *window_drag,
++                                        int            *out_width,
++                                        int            *out_height)
++{
++  calculate_window_size (window_drag,
++                         window_drag->last_edge_resistance_flags,
++                         out_width,
++                         out_height);
++}
++
+ MetaWindow *
+ meta_window_drag_get_window (MetaWindowDrag *window_drag)
+ {
+diff --git a/src/compositor/meta-window-drag.h b/src/compositor/meta-window-drag.h
+index 58d409db98..92ccf358be 100644
+--- a/src/compositor/meta-window-drag.h
++++ b/src/compositor/meta-window-drag.h
+@@ -60,3 +60,7 @@ void meta_window_drag_set_position_hint (MetaWindowDrag   *window_drag,
+ 
+ gboolean meta_window_drag_process_event (MetaWindowDrag     *window_drag,
+                                          const ClutterEvent *event);
++
++void meta_window_drag_calculate_window_size (MetaWindowDrag *window_drag,
++                                             int            *out_width,
++                                             int            *out_height);
+-- 
+GitLab
+
+
+From e7ed286fd11752d292d5bd6e6d1d2470ad83f3ae Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Thu, 28 Aug 2025 10:28:43 +0200
+Subject: [PATCH 03/25] window/wayland: Get size from resize drags when
+ changing state
+
+When we're starting a resize drag, we're indirectly triggering a
+surface-state change configuration when adding the 'resizing'
+xdg_toplevel state. The state change handler inherits the last
+configuration, and if that configuration was of a 'unmaximize'
+configuration without any saved rect (i.e. window mapped as maximized),
+the sent size was 0x0.
+
+However, the specification for the 'resizing' xdg_toplevel state is that
+the size is a maximum, and thus 0x0 makes little sense. Address this by
+deriving the size in the configuration from the active resize grab, if
+there is such, avoiding sending 0x0 when adding the 'resizing' state.
+
+Closes: https://gitlab.gnome.org/GNOME/mutter/-/issues/4281
+---
+ src/wayland/meta-window-wayland.c | 31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
+
+diff --git a/src/wayland/meta-window-wayland.c b/src/wayland/meta-window-wayland.c
+index 104e5fc896..cfd4e2513d 100644
+--- a/src/wayland/meta-window-wayland.c
++++ b/src/wayland/meta-window-wayland.c
+@@ -201,6 +201,17 @@ meta_window_wayland_configure (MetaWindowWayland              *wl_window,
+     meta_wayland_window_configuration_ref (configuration);
+ }
+ 
++static gboolean
++is_drag_resizing_window (MetaWindowDrag *window_drag,
++                         MetaWindow     *window)
++{
++  return (window_drag &&
++          meta_grab_op_is_resizing (meta_window_drag_get_grab_op (window_drag)) &&
++          (meta_window_drag_get_window (window_drag) == window ||
++           meta_window_drag_get_window (window_drag) ==
++           meta_window_config_get_tile_match (window->config)));
++}
++
+ static void
+ surface_state_changed (MetaWindow *window)
+ {
+@@ -210,6 +221,7 @@ surface_state_changed (MetaWindow *window)
+   MetaWaylandWindowConfiguration *last_acked_configuration =
+     wl_window->last_acked_configuration;
+   g_autoptr (MetaWaylandWindowConfiguration) configuration = NULL;
++  MetaWindowDrag *window_drag;
+ 
+   /* don't send notify when the window is being unmanaged */
+   if (window->unmanaging)
+@@ -231,6 +243,16 @@ surface_state_changed (MetaWindow *window)
+       configuration->y = 0;
+     }
+ 
++  window_drag =
++    meta_compositor_get_current_window_drag (window->display->compositor);
++  if (is_drag_resizing_window (window_drag, window))
++    {
++      configuration->has_size = TRUE;
++      meta_window_drag_calculate_window_size (window_drag,
++                                              &configuration->width,
++                                              &configuration->height);
++    }
++
+   meta_window_wayland_configure (wl_window, configuration);
+ }
+ 
+@@ -1361,14 +1383,7 @@ meta_window_wayland_finish_move_resize (MetaWindow              *window,
+     }
+ 
+   window_drag = meta_compositor_get_current_window_drag (display->compositor);
+-
+-  /* x/y are ignored when we're doing interactive resizing */
+-  is_window_being_resized =
+-    (window_drag &&
+-     meta_grab_op_is_resizing (meta_window_drag_get_grab_op (window_drag)) &&
+-     (meta_window_drag_get_window (window_drag) == window ||
+-      meta_window_drag_get_window (window_drag) ==
+-      meta_window_config_get_tile_match (window->config)));
++  is_window_being_resized = is_drag_resizing_window (window_drag, window);
+ 
+   frame_rect = meta_window_config_get_rect (window->config);
+   rect = (MtkRectangle) {
+-- 
+GitLab
+
+
+From 0fbc0b7237e524dc4febf288b18a9b98d59c0699 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Thu, 28 Aug 2025 17:21:35 +0200
+Subject: [PATCH 04/25] window/wayland: Remember window size when surface state
+ changes
+
+Applications (including gtk3 ones) can be a bit bad at handling 0x0
+sizes, so try a bit harder to configure with a known size.
+---
+ src/wayland/meta-window-wayland.c | 22 +++++++++++++++++-----
+ 1 file changed, 17 insertions(+), 5 deletions(-)
+
+diff --git a/src/wayland/meta-window-wayland.c b/src/wayland/meta-window-wayland.c
+index cfd4e2513d..a9e5605532 100644
+--- a/src/wayland/meta-window-wayland.c
++++ b/src/wayland/meta-window-wayland.c
+@@ -218,9 +218,9 @@ surface_state_changed (MetaWindow *window)
+   MetaWindowWayland *wl_window = META_WINDOW_WAYLAND (window);
+   MetaWaylandWindowConfiguration *last_sent_configuration =
+     wl_window->last_sent_configuration;
+-  MetaWaylandWindowConfiguration *last_acked_configuration =
+-    wl_window->last_acked_configuration;
++  MetaWaylandWindowConfiguration *last_acked_configuration;
+   g_autoptr (MetaWaylandWindowConfiguration) configuration = NULL;
++  gboolean is_configuration_up_to_date;
+   MetaWindowDrag *window_drag;
+ 
+   /* don't send notify when the window is being unmanaged */
+@@ -234,9 +234,13 @@ surface_state_changed (MetaWindow *window)
+   configuration->flags = META_MOVE_RESIZE_STATE_CHANGED;
+   configuration->is_suspended = wl_window->is_suspended;
+ 
+-  if (last_acked_configuration &&
+-      last_acked_configuration->serial == last_sent_configuration->serial &&
+-      last_sent_configuration->is_floating)
++  last_acked_configuration = wl_window->last_acked_configuration;
++
++  is_configuration_up_to_date =
++    last_acked_configuration &&
++    last_acked_configuration->serial == last_sent_configuration->serial;
++
++  if (is_configuration_up_to_date && last_sent_configuration->is_floating)
+     {
+       configuration->has_position = FALSE;
+       configuration->x = 0;
+@@ -252,6 +256,14 @@ surface_state_changed (MetaWindow *window)
+                                               &configuration->width,
+                                               &configuration->height);
+     }
++  else if (is_configuration_up_to_date && last_sent_configuration->is_floating)
++    {
++      MtkRectangle frame_rect = meta_window_config_get_rect (window->config);
++
++      configuration->has_size = TRUE;
++      configuration->width = frame_rect.width;
++      configuration->height = frame_rect.height;
++    }
+ 
+   meta_window_wayland_configure (wl_window, configuration);
+ }
+-- 
+GitLab
+
