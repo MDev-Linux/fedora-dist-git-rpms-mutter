@@ -1,0 +1,37 @@
+From 47548230f24beb1161d98dd5741fe7e9d96e8d4c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Fri, 19 Sep 2025 15:07:43 +0200
+Subject: [PATCH 2/2] wayland/data-device: Only finish drag actor if there was
+ one
+
+This will silent an input sanity check warning when releasing a drag
+grab.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/4675>
+---
+ src/wayland/meta-wayland-data-device.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/src/wayland/meta-wayland-data-device.c b/src/wayland/meta-wayland-data-device.c
+index c0e4fa654a..fa5480185b 100644
+--- a/src/wayland/meta-wayland-data-device.c
++++ b/src/wayland/meta-wayland-data-device.c
+@@ -660,9 +660,12 @@ drag_grab_release (MetaWaylandEventHandler *handler,
+     }
+ 
+   /* Finish drag and let actor self-destruct */
+-  meta_dnd_actor_drag_finish (META_DND_ACTOR (drag_grab->feedback_actor),
+-                              success);
+-  drag_grab->feedback_actor = NULL;
++  if (drag_grab->feedback_actor)
++    {
++      meta_dnd_actor_drag_finish (META_DND_ACTOR (drag_grab->feedback_actor),
++                                  success);
++      drag_grab->feedback_actor = NULL;
++    }
+ 
+   data_device_end_drag_grab (drag_grab);
+ 
+-- 
+2.51.0
+
