@@ -42,6 +42,13 @@ Patch:         0001-clutter-Use-event-type-to-determine-ClutterFocus-to-.patch
 Patch:         0001-compositor-Destroy-window-drag-after-other-end-handl.patch
 Patch:         0002-wayland-data-device-Only-finish-drag-actor-if-there-.patch
 
+# https://gitlab.gnome.org/GNOME/mutter/-/issues/4353
+# https://gitlab.gnome.org/GNOME/mutter/-/issues/4347
+# https://gitlab.gnome.org/GNOME/mutter/-/issues/4339
+# https://gitlab.gnome.org/GNOME/mutter/-/issues/4351
+# Fix broken modifier keys
+Patch:         0003-wayland-Do-not-update-modifiers-prior-to-event-delivery.patch
+
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
 BuildRequires: pkgconfig(libadwaita-1)
