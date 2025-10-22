@@ -26,6 +26,12 @@ Source1:       org.gnome.mutter.fedora.gschema.override
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
 Patch:         mutter-42.alpha-disable-tegra.patch
 
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/4720
+# https://gitlab.gnome.org/GNOME/mutter/-/issues/4400
+# https://bugzilla.redhat.com/show_bug.cgi?id=2405584
+# Fixes crash related to drag'n'drop with rootless Xwayland
+Patch:         0001-xwayland-dnd-Pass-dest-to-meta_x11_display_lookup_x_.patch
+
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
 BuildRequires: pkgconfig(libadwaita-1)
