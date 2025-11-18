@@ -86,6 +86,7 @@ Requires: glib2%{?_isa} >= %{glib_version}
 Requires: gsettings-desktop-schemas%{?_isa} >= %{gsettings_desktop_schemas_version}
 Requires: gnome-settings-daemon
 Requires: gtk4%{?_isa} >= %{gtk4_version}
+Requires: libeis%{?_isa}) >= %{libei_version}
 Requires: libinput%{?_isa} >= %{libinput_version}
 Requires: pipewire%{_isa} >= %{pipewire_version}
 Requires: startup-notification
@@ -133,6 +134,7 @@ Common files used by Mutter and soft forks of Mutter
 %package devel
 Summary: Development package for %{name}
 Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: libei%{?_isa} >= %{libei_version}
 # for EGL/eglmesaext.h that's included from public cogl-egl-defines.h header
 Requires: mesa-libEGL-devel
 
@@ -145,6 +147,7 @@ Summary:  Tests for the %{name} package
 Requires: %{name}-devel%{?_isa} = %{version}-%{release}
 Requires: %{name}%{?_isa} = %{version}-%{release}
 Requires: gtk3%{?_isa} >= %{gtk3_version}
+Requires: libei%{?_isa} >= %{libei_version}
 
 %description tests
 The %{name}-tests package contains tests that can be used to verify
