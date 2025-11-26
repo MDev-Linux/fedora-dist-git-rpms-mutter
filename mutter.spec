@@ -31,27 +31,29 @@ Source1:       org.gnome.mutter.fedora.gschema.override
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
 Patch:         mutter-42.alpha-disable-tegra.patch
 
-BuildRequires: pkgconfig(glib-2.0) >= %{glib_version}
-BuildRequires: pkgconfig(gobject-introspection-1.0) >= %{gobject_introspection_version}
-BuildRequires: pkgconfig(sm)
-BuildRequires: pkgconfig(libadwaita-1)
-BuildRequires: pkgconfig(libwacom)
-BuildRequires: pkgconfig(xkbcommon)
+BuildRequires: cvt
+BuildRequires: desktop-file-utils
 BuildRequires: mesa-libEGL-devel
 BuildRequires: mesa-libGLES-devel
 BuildRequires: mesa-libGL-devel
 BuildRequires: mesa-libgbm-devel
+BuildRequires: pam-devel
+BuildRequires: pkgconfig(bash-completion)
+BuildRequires: pkgconfig(colord) >= %{colord_version}
+BuildRequires: pkgconfig(glib-2.0) >= %{glib_version}
+BuildRequires: pkgconfig(gobject-introspection-1.0) >= %{gobject_introspection_version}
+BuildRequires: pkgconfig(sm)
+BuildRequires: pkgconfig(lcms2) >= %{lcms2_version}
+BuildRequires: pkgconfig(libadwaita-1)
+BuildRequires: pkgconfig(libwacom)
+BuildRequires: pkgconfig(xkbcommon)
 BuildRequires: pkgconfig(glesv2)
 BuildRequires: pkgconfig(graphene-gobject-1.0)
-BuildRequires: pam-devel
 BuildRequires: pkgconfig(libdisplay-info)
 BuildRequires: pkgconfig(libpipewire-0.3) >= %{pipewire_version}
 BuildRequires: pkgconfig(sysprof-capture-4)
-BuildRequires: sysprof-devel
 BuildRequires: pkgconfig(libsystemd)
 BuildRequires: pkgconfig(umockdev-1.0)
-BuildRequires: desktop-file-utils
-BuildRequires: cvt
 BuildRequires: python3-argcomplete
 BuildRequires: python3-docutils
 # Bootstrap requirements
@@ -66,18 +68,16 @@ BuildRequires: pkgconfig(glycin-2)
 BuildRequires: pkgconfig(gnome-desktop-4)
 BuildRequires: pkgconfig(gudev-1.0)
 BuildRequires: pkgconfig(libdrm) >= %{libdrm_version}
+BuildRequires: pkgconfig(libei-1.0) >= %{libei_version}
+BuildRequires: pkgconfig(libeis-1.0) >= %{libei_version}
 BuildRequires: pkgconfig(libstartup-notification-1.0)
 BuildRequires: pkgconfig(wayland-protocols) >= %{wayland_protocols_version}
 BuildRequires: pkgconfig(wayland-server) >= %{wayland_server_version}
-BuildRequires: pkgconfig(lcms2) >= %{lcms2_version}
-BuildRequires: pkgconfig(colord) >= %{colord_version}
-BuildRequires: pkgconfig(libei-1.0) >= %{libei_version}
-BuildRequires: pkgconfig(libeis-1.0) >= %{libei_version}
+BuildRequires: sysprof-devel
 
 BuildRequires: pkgconfig(libinput) >= %{libinput_version}
 BuildRequires: pkgconfig(pixman-1) >= %{pixman_version}
 BuildRequires: pkgconfig(xwayland)
-BuildRequires: pkgconfig(bash-completion)
 
 BuildRequires: python3-dbusmock
 
@@ -169,10 +169,10 @@ install -p %{SOURCE1} %{buildroot}%{_datadir}/glib-2.0/schemas
 %files -f %{name}.lang
 %license COPYING
 %doc NEWS
-%{_bindir}/mutter
-%{_datadir}/polkit-1/actions/org.gnome.mutter.*.policy
 %{_bindir}/gdctl
 %{_bindir}/gnome-service-client
+%{_bindir}/mutter
+%{_datadir}/polkit-1/actions/org.gnome.mutter.*.policy
 %{_libdir}/lib*.so.*
 %{_libdir}/mutter-%{mutter_api_version}/
 %{_libexecdir}/mutter-backlight-helper
@@ -201,9 +201,9 @@ install -p %{SOURCE1} %{buildroot}%{_datadir}/glib-2.0/schemas
 %{_libexecdir}/mutter-devkit
 
 %files tests
-%{_libexecdir}/installed-tests/mutter-%{mutter_api_version}
 %{_datadir}/installed-tests/mutter-%{mutter_api_version}
 %{_datadir}/mutter-%{mutter_api_version}/tests
+%{_libexecdir}/installed-tests/mutter-%{mutter_api_version}
 
 %changelog
 %autochangelog
