@@ -84,7 +84,7 @@ BuildRequires: pkgconfig(xwayland)
 
 BuildRequires: python3-dbusmock
 
-Requires: control-center-filesystem
+Requires: gnome-control-center-filesystem
 Requires: glib2%{?_isa} >= %{glib_version}
 Requires: gsettings-desktop-schemas%{?_isa} >= %{gsettings_desktop_schemas_version}
 Requires: gnome-settings-daemon
