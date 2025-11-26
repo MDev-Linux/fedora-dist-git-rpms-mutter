@@ -1,11 +1,11 @@
 %global glib_version 2.81.1
 %global gtk3_version 3.19.8
-%global gtk4_version 4.0.0
+%global gtk4_version 4.14.0
 %global gsettings_desktop_schemas_version 47~beta
 %global libdrm_version 2.4.118
 %global libinput_version 1.26.0
 %global pixman_version 0.42
-%global pipewire_version 1.2.0
+%global pipewire_version 1.2.7
 %global lcms2_version 2.6
 %global colord_version 1.4.5
 %global libei_version 1.3.901
