@@ -56,6 +56,7 @@ BuildRequires: python3-docutils
 BuildRequires: gettext-devel git-core
 BuildRequires: pkgconfig(libcanberra)
 BuildRequires: pkgconfig(gsettings-desktop-schemas) >= %{gsettings_desktop_schemas_version}
+BuildRequires: pkgconfig(gtk4) >= %{gtk4_version}
 BuildRequires: pkgconfig(gnome-settings-daemon)
 BuildRequires: meson
 BuildRequires: pkgconfig(gbm)
