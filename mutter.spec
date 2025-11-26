@@ -31,6 +31,7 @@ Source1:       org.gnome.mutter.fedora.gschema.override
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
 Patch:         mutter-42.alpha-disable-tegra.patch
 
+BuildRequires: pkgconfig(glib-2.0) >= %{glib_version}
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= %{gobject_introspection_version}
 BuildRequires: pkgconfig(sm)
 BuildRequires: pkgconfig(libadwaita-1)
@@ -81,6 +82,7 @@ BuildRequires: pkgconfig(bash-completion)
 BuildRequires: python3-dbusmock
 
 Requires: control-center-filesystem
+Requires: glib2%{?_isa} >= %{glib_version}
 Requires: gsettings-desktop-schemas%{?_isa} >= %{gsettings_desktop_schemas_version}
 Requires: gnome-settings-daemon
 Requires: gtk4%{?_isa} >= %{gtk4_version}
