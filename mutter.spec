@@ -194,7 +194,7 @@ install -p %{SOURCE1} %{buildroot}%{_datadir}/glib-2.0/schemas
 %{_datadir}/applications/org.gnome.Mutter.Mdk.desktop
 %{_datadir}/glib-2.0/schemas/org.gnome.mutter.devkit.gschema.xml
 %{_datadir}/icons/hicolor/*/apps/org.gnome.Mutter.Mdk*
-%{_includedir}/*
+%{_includedir}/mutter-%{mutter_api_version}/
 %{_libdir}/lib*.so
 %{_libdir}/mutter-%{mutter_api_version}/*.gir
 %{_libdir}/pkgconfig/*
