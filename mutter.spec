@@ -173,7 +173,6 @@ install -p %{SOURCE1} %{buildroot}%{_datadir}/glib-2.0/schemas
 %{_datadir}/polkit-1/actions/org.gnome.mutter.*.policy
 %{_bindir}/gdctl
 %{_bindir}/gnome-service-client
-%{_datadir}/bash-completion/completions/gdctl
 %{_libdir}/lib*.so.*
 %{_libdir}/mutter-%{mutter_api_version}/
 %{_libexecdir}/mutter-backlight-helper
@@ -181,6 +180,7 @@ install -p %{SOURCE1} %{buildroot}%{_datadir}/glib-2.0/schemas
 %{_mandir}/man1/mutter.1*
 %{_mandir}/man1/gdctl.1*
 %{_mandir}/man1/gnome-service-client.1*
+%{bash_completions_dir}/gdctl
 
 %files common
 %{_datadir}/GConf/gsettings/mutter-schemas.convert
