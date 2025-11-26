@@ -30,7 +30,7 @@ Source1:       org.gnome.mutter.fedora.gschema.override
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
 Patch:         mutter-42.alpha-disable-tegra.patch
 
-BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
+BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.4
 BuildRequires: pkgconfig(sm)
 BuildRequires: pkgconfig(libadwaita-1)
 BuildRequires: pkgconfig(libwacom)
