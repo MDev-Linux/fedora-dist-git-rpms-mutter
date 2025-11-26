@@ -1,4 +1,5 @@
 %global glib_version 2.81.1
+%global gobject_introspection_version 1.41.4
 %global gtk3_version 3.19.8
 %global gtk4_version 4.14.0
 %global gsettings_desktop_schemas_version 47~beta
@@ -30,7 +31,7 @@ Source1:       org.gnome.mutter.fedora.gschema.override
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
 Patch:         mutter-42.alpha-disable-tegra.patch
 
-BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.4
+BuildRequires: pkgconfig(gobject-introspection-1.0) >= %{gobject_introspection_version}
 BuildRequires: pkgconfig(sm)
 BuildRequires: pkgconfig(libadwaita-1)
 BuildRequires: pkgconfig(libwacom)
