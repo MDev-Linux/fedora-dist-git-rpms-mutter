@@ -86,7 +86,7 @@ Requires: glib2%{?_isa} >= %{glib_version}
 Requires: gsettings-desktop-schemas%{?_isa} >= %{gsettings_desktop_schemas_version}
 Requires: gnome-settings-daemon
 Requires: gtk4%{?_isa} >= %{gtk4_version}
-Requires: libeis%{?_isa}) >= %{libei_version}
+Requires: libeis%{?_isa} >= %{libei_version}
 Requires: libinput%{?_isa} >= %{libinput_version}
 Requires: pipewire%{_isa} >= %{pipewire_version}
 Requires: startup-notification
