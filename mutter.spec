@@ -175,6 +175,7 @@ install -p %{SOURCE1} %{buildroot}%{_datadir}/glib-2.0/schemas
 %{_datadir}/polkit-1/actions/org.gnome.mutter.*.policy
 %{_libdir}/lib*.so.*
 %{_libdir}/mutter-%{mutter_api_version}/
+%exclude %{_libdir}/mutter-%{mutter_api_version}/*.gir
 %{_libexecdir}/mutter-backlight-helper
 %{_libexecdir}/mutter-x11-frames
 %{_mandir}/man1/mutter.1*
